@@ -7,31 +7,25 @@ import { format } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
 
-// Custom "Hardware" Icons - Stylized for high-end production feel
+// Hardware Infrastructure Icons - Custom 2.5px strokes for high-end tool feel
 const Icons = {
-  Music: () => (
+  Base: () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+       <rect x="2" y="2" width="20" height="20" rx="4"/><path d="M7 12h10"/><path d="M12 7v10"/>
     </svg>
   ),
-  Upload: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+  Logo: () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
     </svg>
   ),
-  Check: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  ),
-  Alert: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  Key: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3m-3-3l-2.5-2.5"/>
     </svg>
   )
 }
 
-// Sub-components for cleaner structure
 import { ProgressBar } from './ProgressBar'
 import { DocumentCard } from './DocumentCard'
 
@@ -70,37 +64,60 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
   const [materials, setMaterials] = useState<Material[]>(initialMaterials)
   const [isSyncing, setIsSyncing] = useState(false)
 
-  const submittedCount = materials.filter(m => m.status === 'submitted').length
-  const totalCount = materials.length
+  const isPreview = token === 'preview-mode'
+  
+  // Real industry-standard material logic
+  const materialsToRender = isPreview ? [
+    {
+      id: 'm1',
+      item_name: 'Primary Technical Rider',
+      description: 'Full audio, monitor requirements, and lighting patch.',
+      status: 'pending',
+      deadline: '2026-05-01',
+      portal_token: 'preview-1'
+    },
+    {
+      id: 'm2',
+      item_name: 'Stage Plot & Input List',
+      description: 'Physical positioning and channel mapping for FOH.',
+      status: 'pending',
+      deadline: '2026-05-01',
+      portal_token: 'preview-2'
+    },
+    {
+      id: 'm3',
+      item_name: 'Hospitality & Wellness Specification',
+      description: 'Catering, green room requirements, and dietary notes.',
+      status: 'submitted',
+      deadline: '2026-05-10',
+      submitted_at: '2024-04-03',
+      file_url: '#',
+      portal_token: 'preview-3'
+    },
+    {
+       id: 'm4',
+       item_name: 'Insurance & PLI Certification',
+       description: 'Mandatory public liability insurance for venue clearance.',
+       status: 'pending',
+       deadline: '2026-04-30',
+       portal_token: 'preview-4'
+    }
+  ] as Material[] : materials
+
+  const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
+  const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
 
   useEffect(() => {
     if (isComplete) {
       confetti({ 
-        particleCount: 100, 
-        spread: 70, 
+        particleCount: 150, 
+        spread: 90, 
         origin: { y: 0.6 },
-        colors: ['#4f46e5', '#10b981']
+        colors: ['#4f46e5', '#10b981', '#f59e0b']
       })
     }
   }, [isComplete])
-
-  const sync = useCallback(async () => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    setIsSyncing(true)
-    const { data } = await supabase
-      .from('materials')
-      .select('*')
-      .eq('portal_token', token) // Or filter by show_id if token is for one item
-      // Note: In real world, we'd filter by show_id linked to the token
-    
-    // For this demo/portal logic, we'll re-fetch based on show_id if known
-    // But to keep it robust:
-    setIsSyncing(false)
-  }, [token])
 
   const handleUpload = async (materialToken: string, file: File, name: string): Promise<boolean> => {
     try {
@@ -116,88 +133,100 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
 
       if (!res.ok) throw new Error()
       
-      toast.success(`${name} submitted successfully`)
-      // Optimistic locally or simple refresh
+      toast.success(`${name} transmitted to production.`)
+      // Note: Real state sync would happen via Supabase subscription or refresh
       return true
     } catch (e) {
-      toast.error('Transmission error. Please try again.')
+      toast.error('Transmission failed. Check network status.')
       return false
     }
   }
 
   return (
-    <div className="bg-white min-h-screen font-sans antialiased text-slate-950 selection:bg-indigo-100">
-      <Toaster position="bottom-right" />
+    <div className="bg-white min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900 antialiased overflow-x-hidden">
+      <Toaster position="top-center" richColors />
 
-      {/* Floating Meta-Header (Utility Feel) */}
-      <header className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-3rem)] max-w-5xl">
-        <div className="bg-slate-950 text-white rounded-full px-6 py-3 flex items-center justify-between shadow-2xl shadow-indigo-900/20 border border-white/10 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <Icons.Music />
-             </div>
-             <span className="font-black tracking-tighter text-lg italic">SR PORTAL</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-             <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                {show.venue_name}
-             </div>
-             <div className="h-4 w-px bg-white/10 hidden sm:block" />
-             <span className="text-[10px] font-black tracking-widest uppercase">
-                {submittedCount}/{totalCount} DONE
-             </span>
-          </div>
-        </div>
-      </header>
+      {/* Floating Control Bar - Replaces the generic Header */}
+      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-3rem)] max-w-5xl">
+         <div className="bg-slate-950 text-white rounded-[1.5rem] px-8 py-5 flex items-center justify-between shadow-2xl border border-white/10 backdrop-blur-xl">
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                  <Icons.Logo />
+               </div>
+               <div>
+                  <span className="text-xl font-black tracking-tighter italic uppercase block leading-none mb-1">ShowReady</span>
+                  <span className="text-[9px] font-black tracking-[0.3em] text-white/30 uppercase">Artist Portal</span>
+               </div>
+            </div>
+            
+            <div className="flex items-center gap-8">
+               <div className="hidden md:flex flex-col items-end">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1 leading-none">Primary Production</span>
+                  <span className="text-sm font-bold tracking-tight">{show.venue_name}</span>
+               </div>
+               <div className="h-6 w-px bg-white/10" />
+               <div className="flex flex-col items-start min-w-[60px]">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1 leading-none">Activity</span>
+                  <span className="text-sm font-black tracking-tighter">{submittedCount}/{totalCount}</span>
+               </div>
+            </div>
+         </div>
+      </nav>
 
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-40">
+      <main className="max-w-5xl mx-auto px-6 pt-40 pb-48">
         
-        {/* Kinetic Hero */}
-        <section className="mb-24">
+        {/* Kinetic Header Section */}
+        <section className="mb-24 space-y-10">
            <motion.div
              initial={{ opacity: 0, x: -20 }}
              animate={{ opacity: 1, x: 0 }}
-             className="inline-block bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest mb-6 border border-indigo-100"
+             className="flex flex-wrap items-center gap-4"
            >
-              Production Request
+              <div className="inline-flex bg-slate-950 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
+                 Secure Link Verified
+              </div>
+              <div className="h-4 w-px bg-slate-100" />
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
+                 Reference ID: {show.show_date.replace(/-/g, '')}
+              </div>
            </motion.div>
            
-           <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-8">
+           <h1 className="text-7xl lg:text-[10rem] font-black leading-[0.85] tracking-tighter uppercase italic text-slate-900">
               {artist.name.toUpperCase()}
            </h1>
            
-           <div className="grid md:grid-cols-2 gap-12 items-end">
-              <p className="text-2xl md:text-3xl font-bold text-slate-400 leading-tight tracking-tight">
-                 Hey {artist.name.split(' ')[0]}, <br />
-                 <span className="text-slate-900">Please finalize your documents</span> for {show.venue_name}.
-              </p>
+           <div className="grid lg:grid-cols-2 gap-16 items-start pt-6">
+              <div className="space-y-6">
+                 <p className="text-2xl lg:text-4xl text-slate-400 font-bold tracking-tight leading-[1.1] italic">
+                    Welcome to your <span className="text-slate-950">Active Production Hub.</span>
+                 </p>
+                 <p className="text-lg lg:text-xl text-slate-500 font-bold leading-relaxed max-w-lg italic">
+                    Every file submitted here is encrypted and transmitted directly to the production team at <span className="text-slate-900 underline decoration-indigo-200 decoration-8 underline-offset-4">{show.venue_name}</span>.
+                 </p>
+              </div>
               
-              <div className="flex flex-col gap-2">
-                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2">
-                    <span>Deadline Progression</span>
-                    <span className={isComplete ? 'text-emerald-500' : 'text-slate-900'}>
-                       {Math.round((submittedCount/totalCount)*100)}%
-                    </span>
-                 </div>
+              <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100/50 space-y-6">
                  <ProgressBar total={totalCount} submittedCount={submittedCount} />
+                 <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 pt-2 border-t border-slate-100">
+                    <span>Global Progress Meter</span>
+                    <span className="text-indigo-600">Secure Protocol</span>
+                 </div>
               </div>
            </div>
         </section>
 
-        {/* The Production Grid - Intentional Asymmetry */}
-        <div className="grid lg:grid-cols-[1fr_300px] gap-20">
+        {/* Organized Production Grid */}
+        <div className="grid lg:grid-cols-[1fr_350px] gap-24">
            
-           {/* Primary Work Column */}
-           <section className="space-y-6">
-              <div className="flex items-center justify-between mb-10">
-                 <h2 className="text-sm font-black uppercase tracking-[0.3em] text-slate-300">Required Materials</h2>
-                 <div className="h-px flex-1 bg-slate-50 mx-6" />
+           {/* Mandatory Assets Assets */}
+           <section className="space-y-12">
+              <div className="flex items-center gap-6">
+                 <h2 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900 shrink-0">Required Documents</h2>
+                 <div className="h-px w-full bg-slate-100" />
               </div>
               
-              <div className="space-y-4">
-                 {materials.map((m, idx) => (
+              <div className="space-y-6">
+                 {materialsToRender.map((m, idx) => (
                     <DocumentCard 
                        key={m.id} 
                        material={m} 
@@ -208,72 +237,67 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
               </div>
            </section>
 
-           {/* Sidebar - Contextual Utility */}
+           {/* Support & Support & Metadata Meta */}
            <aside className="space-y-12">
-              <div className="bg-slate-50 rounded-[2rem] p-8 space-y-8">
-                 <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Show Identity</h4>
-                    <div className="space-y-1">
-                       <p className="text-xl font-bold tracking-tight">{show.venue_name}</p>
-                       <p className="text-sm font-medium text-slate-500">{show.city}</p>
-                    </div>
-                 </div>
+              <div className="sticky top-40 space-y-12">
                  
-                 <div className="h-px bg-slate-200/50" />
-                 
-                 <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Production Crew</h4>
-                    <div className="space-y-1">
-                       <p className="text-xl font-bold tracking-tight">{show.promoter_name}</p>
-                       <a href={`mailto:${show.promoter_email}`} className="text-sm font-medium text-indigo-600 hover:underline">
-                          Contact Hospitality
-                       </a>
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 italic">Production Details</h4>
+                    <div className="space-y-3">
+                       <div className="bg-slate-950 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+                          <div className="relative z-10 space-y-4">
+                             <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-white">
+                                   <Icons.Key />
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Verified Stage</span>
+                             </div>
+                             <p className="text-3xl font-black text-white italic tracking-tighter leading-none">{show.venue_name}</p>
+                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">{show.city}</p>
+                          </div>
+                      </div>
+                      
+                      <div className="bg-slate-50 p-8 rounded-[2.5rem] space-y-1 border border-slate-100">
+                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Show Date</p>
+                         <p className="text-xl font-black tracking-tight text-slate-900 italic">
+                            {format(new Date(show.show_date), 'MMMM do, yyyy')}
+                         </p>
+                      </div>
                     </div>
                  </div>
 
-                 <div className="h-px bg-slate-200/50" />
-
-                 <div className="pt-4">
-                    <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                       <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                          <Icons.Check />
+                 <div className="space-y-6">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 italic">Assistance</h4>
+                    <a 
+                      href={`mailto:${show.promoter_email}`}
+                      className="flex flex-col gap-4 p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 group transition-all hover:bg-indigo-600"
+                    >
+                       <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700 group-hover:text-white transition-colors">Immediate Support</p>
+                       <div>
+                          <p className="text-sm font-black text-slate-950 group-hover:text-white leading-none mb-1 transition-colors">{show.promoter_name}</p>
+                          <p className="text-xs font-bold text-slate-400 group-hover:text-white/60 transition-colors">Promoter & Production Manager</p>
                        </div>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed tracking-wider">
-                          All uploads are encrypted and sent directly to {show.promoter_name}'s secure cloud.
-                       </p>
-                    </div>
+                    </a>
                  </div>
-              </div>
-              
-              <div className="px-8 flex flex-col gap-4">
-                 <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.25em] leading-loose">
-                    This portal is a private production tool. Do not share this URL. &copy; 2026 ShowReady
-                 </p>
+
               </div>
            </aside>
         </div>
 
       </main>
 
-      <AnimatePresence>
-         {isComplete && (
-            <motion.div 
-               initial={{ opacity: 0, y: 100 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-6"
-            >
-               <div className="bg-emerald-600 text-white rounded-[2rem] p-8 shadow-2xl shadow-emerald-200 flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                     <Icons.Check />
-                  </div>
-                  <h3 className="text-xl font-black tracking-tight mb-2 uppercase italic">Mission Complete</h3>
-                  <p className="text-emerald-100 font-bold text-sm leading-relaxed">
-                     Every document has been securely received. <br/> See you at the show!
-                  </p>
-               </div>
-            </motion.div>
-         )}
-      </AnimatePresence>
+      <footer className="footer bg-slate-950 py-32 px-12 border-t border-white/5">
+         <div className="max-w-6xl mx-auto flex flex-col items-center">
+            <div className="flex items-center gap-2 opacity-20 hover:opacity-100 transition-opacity mb-12">
+               <Icons.Logo />
+               <span className="text-xl font-black tracking-tighter italic uppercase text-white">ShowReady</span>
+            </div>
+            
+            <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em] text-center max-w-sm leading-loose">
+               Secure Production Environment &bull; Automated Deployment 2026 &bull; Verified Portal Protocol
+            </p>
+         </div>
+      </footer>
     </div>
   )
 }
