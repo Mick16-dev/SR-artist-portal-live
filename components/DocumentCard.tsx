@@ -1,13 +1,31 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { 
-  FileText, CheckCircle2, Clock, AlertCircle, 
-  UploadCloud, ExternalLink, RefreshCw, XCircle,
-} from 'lucide-react'
-import { format, formatDistanceToNow, isPast } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
+import { format, isPast } from 'date-fns'
+
+const Icons = {
+  File: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+    </svg>
+  ),
+  Upload: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  ),
+  Check: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+       <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  ),
+  Refresh: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+    </svg>
+  )
+}
 
 interface DocumentCardProps {
   material: {
@@ -20,203 +38,137 @@ interface DocumentCardProps {
     file_url?: string
     portal_token: string
   }
-  onUpload: (token: string, file: File, itemName: string) => Promise<boolean>
+  onUpload: (token: string, file: File, name: string) => Promise<boolean>
+  index: number
 }
 
-export function DocumentCard({ material, onUpload }: DocumentCardProps) {
+export function DocumentCard({ material, onUpload, index }: DocumentCardProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const deadline = new Date(material.deadline)
-  const isOverdue = material.status === 'pending' && isPast(deadline)
+
   const isSubmitted = material.status === 'submitted'
-  
-  const distanceToDeadline = formatDistanceToNow(deadline, { addSuffix: true })
-  const formattedDate = format(deadline, 'EEEE, MMMM do yyyy')
+  const isOverdue = !isSubmitted && isPast(new Date(material.deadline))
+  const deadlineDate = new Date(material.deadline)
 
-  // Instructions: Card styling logic
-  let borderClass = 'border-l-indigo-600'
-  let bgClass = 'bg-white'
-  let icon = <Clock size={16} className="text-secondary-400" />
-  let statusBadgeText = `${distanceToDeadline.replace('about ', '')} remaining`
-  let badgeColor = 'bg-gray-100 text-gray-500'
-
-  if (isSubmitted) {
-    // Instruction: "Green left border, card background: very light green"
-    borderClass = 'border-l-emerald-500 scale-100'
-    bgClass = 'bg-emerald-50/20'
-    icon = <CheckCircle2 size={16} className="text-emerald-600" />
-    statusBadgeText = `COMPLETED — ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM do') : 'RECEIVED'}`
-    badgeColor = 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'
-  } else if (isOverdue) {
-    // Instruction: "Red left border, card background: very light red"
-    borderClass = 'border-l-red-500'
-    bgClass = 'bg-red-50/20'
-    icon = <AlertCircle size={16} className="text-red-500" />
-    statusBadgeText = `${distanceToDeadline.replace('ago', '')} overdue`
-    badgeColor = 'bg-red-100 text-red-700 ring-1 ring-red-200 shadow-sm'
-  }
-
-  const startUploadFlow = async (file: File) => {
-    setUploadError(null)
-    
-    // Instruction: "Max size: 10MB"
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('This file is too large. Maximum size is 10MB.')
-      return
-    }
-
-    // Instruction: "Accepted: PDF, DOC, DOCX"
-    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    if (!allowed.includes(file.type)) {
-      setUploadError('This file type is not accepted. Please upload PDF, DOC, or DOCX.')
-      return
-    }
-
+  const handleFile = async (file: File) => {
     setIsUploading(true)
-    try {
-      const success = await onUpload(material.portal_token, file, material.item_name)
-      if (!success) throw new Error('Failed to reach backend')
-    } catch (err) {
-      setUploadError('Upload failed. Please check your internet connection and try again.')
-    } finally {
-      setIsUploading(false)
+    const success = await onUpload(material.portal_token, file, material.item_name)
+    if (success) {
+      // Local reload logic is handled by PortalClient
     }
+    setIsUploading(false)
   }
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
     if (isSubmitted) return
-    
     const file = e.dataTransfer.files?.[0]
-    if (file) await startUploadFlow(file)
+    if (file) handleFile(file)
   }
 
   return (
     <motion.div
-      layout
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
       onDragOver={(e) => { e.preventDefault(); !isSubmitted && setIsDragOver(true) }}
+      onDragEnter={() => !isSubmitted && setIsDragOver(true)}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`relative border-l-4 ${borderClass} ${bgClass} border border-gray-100 rounded-[2rem] p-8 transition-all hover:shadow-xl hover:shadow-indigo-50/50 group ${isDragOver ? 'ring-4 ring-indigo-500 shadow-2xl' : ''}`}
+      className={`relative group bg-white border border-slate-100 rounded-[2rem] p-10 flex flex-col md:flex-row md:items-center justify-between gap-12 transition-all duration-300 hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.1)] ${isDragOver ? 'ring-4 ring-indigo-600 scale-[1.02]' : ''}`}
     >
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-        <div className="flex-1 space-y-4">
-          <div className="flex items-center gap-3">
-             <div className={`p-2 rounded-xl bg-white shadow-sm border border-gray-50 text-gray-400 transition-colors ${isSubmitted ? 'text-emerald-500' : 'text-indigo-400'}`}>
-                <FileText size={20} />
-             </div>
-             <div>
-               <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none group-hover:text-indigo-700 transition-colors">
-                  {material.item_name}
-               </h3>
-               {material.description && <p className="text-sm font-medium text-gray-500 mt-1">{material.description}</p>}
-             </div>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4 pt-2">
-            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full ${badgeColor}`}>
-               {icon}
-               {statusBadgeText}
-            </div>
-            
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] px-4 py-1.5 rounded-full bg-gray-50 border border-gray-100">
-               Due {formattedDate}
-            </div>
-          </div>
-          
-          {isOverdue && (
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-red-600 font-bold text-xs uppercase tracking-widest"
-            >
-               Please submit this as soon as possible
-            </motion.p>
-          )}
+      <div className="flex-1 space-y-6">
+        <div className="flex items-start gap-4">
+           <div className={`p-4 rounded-2xl shrink-0 transition-colors ${isSubmitted ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+              <Icons.File />
+           </div>
+           
+           <div className="space-y-1">
+              <h3 className="text-3xl font-black tracking-tighter italic uppercase text-slate-900 leading-none">
+                 {material.item_name}
+              </h3>
+              <p className="text-sm font-medium text-slate-400 group-hover:text-slate-500 transition-colors">
+                 {material.description || 'Mandatory production material'}
+              </p>
+           </div>
         </div>
 
-        <div className="flex-shrink-0 md:pt-2">
-          {isSubmitted ? (
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              href={material.file_url}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 border-2 border-gray-100 font-black py-4 px-10 rounded-[1.25rem] text-[13px] uppercase tracking-widest shadow-sm hover:border-emerald-200 transition-all active:shadow-inner min-h-[56px] min-w-[200px]"
-            >
-              <ExternalLink size={16} />
-              View File
-            </motion.a>
-          ) : (
-            <div className="space-y-4">
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                onChange={(e) => e.target.files?.[0] && startUploadFlow(e.target.files[0])}
-                className="hidden" 
-                accept=".pdf,.doc,.docx"
-              />
-              
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className={`w-full md:w-auto inline-flex items-center justify-center gap-3 font-black py-4 px-10 rounded-[1.25rem] text-[13px] uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 min-h-[56px] min-w-[240px] text-white ${isOverdue ? 'bg-red-500 hover:bg-red-600 shadow-red-100' : 'bg-gray-900 hover:bg-black shadow-gray-100'}`}
-              >
-                {isUploading ? (
-                  <RefreshCw size={18} className="animate-spin" />
-                ) : (
-                  <UploadCloud size={18} />
-                )}
-                {isUploading ? `Sending...` : `Upload ${material.item_name}`}
-              </button>
-            </div>
-          )}
+        <div className="flex flex-wrap items-center gap-3">
+           <div className={`text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full ring-1 ${isSubmitted ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : isOverdue ? 'bg-red-50 text-red-700 ring-red-100' : 'bg-slate-50 text-slate-500 ring-slate-100'}`}>
+              {isSubmitted ? 'SUBMITTED' : isOverdue ? 'OVERDUE' : 'PENDING'}
+           </div>
+           
+           <div className="text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full bg-white text-slate-300 ring-1 ring-slate-100 flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${isSubmitted ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+              DUE: {format(deadlineDate, 'MMM do')}
+           </div>
         </div>
       </div>
 
-      {uploadError && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-4 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 border border-red-100"
-        >
-          <XCircle size={16} />
-          {uploadError}
-        </motion.div>
-      )}
-
-      {/* Drag & Drop Visual State */}
-      <AnimatePresence>
-        {isDragOver && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-indigo-600/90 backdrop-blur-md rounded-[2rem] flex items-center justify-center z-50 text-white border-4 border-dashed border-white/50"
-          >
-            <div className="text-center space-y-4">
-               <UploadCloud size={48} className="mx-auto" />
-               <p className="text-2xl font-black uppercase tracking-widest">Drop to Upload</p>
-            </div>
-          </motion.div>
+      <div className="shrink-0 flex flex-col items-center">
+        <AnimatePresence mode="wait">
+          {isSubmitted ? (
+             <motion.a
+               key="view-button"
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.9 }}
+               href={material.file_url}
+               target="_blank"
+               rel="noreferrer"
+               className="w-full md:w-auto px-10 py-5 bg-slate-950 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
+             >
+                <Icons.Check />
+                Received
+             </motion.a>
+          ) : (
+             <motion.button
+               key="upload-button"
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.9 }}
+               onClick={() => fileInputRef.current?.click()}
+               disabled={isUploading}
+               className={`w-full md:w-auto px-10 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 min-w-[220px] ${isOverdue ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-800 shadow-indigo-100'}`}
+             >
+                {isUploading ? <Icons.Refresh /> : <Icons.Upload />}
+                {isUploading ? 'Sending...' : `Transmit ${material.item_name}`}
+             </motion.button>
+          )}
+        </AnimatePresence>
+        
+        {!isSubmitted && (
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mt-5 leading-loose">
+             PDF &bull; DOC &bull; 10MB
+          </p>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Hidden Input */}
+      <input 
+         type="file" 
+         ref={fileInputRef} 
+         className="hidden" 
+         accept=".pdf,.doc,.docx"
+         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
       
-      {!isSubmitted && !isUploading && (
-        <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
-           <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">
-              ACCEPTED: PDF, DOC, DOCX
-           </p>
-           <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">
-              FILE LIMIT: 10MB
-           </p>
-        </div>
-      )}
+      {/* Heavy Interaction Layer */}
+      <AnimatePresence>
+         {isDragOver && (
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="absolute inset-0 bg-indigo-600/95 backdrop-blur-md rounded-[2.2rem] flex flex-col items-center justify-center text-white z-20 border-[6px] border-dashed border-white/20"
+            >
+               <Icons.Upload />
+               <p className="text-[11px] font-black uppercase tracking-[0.4em] mt-4">Drop to submit</p>
+            </motion.div>
+         )}
+      </AnimatePresence>
     </motion.div>
   )
 }
