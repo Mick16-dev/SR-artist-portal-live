@@ -94,24 +94,54 @@ function ProgressBar({ submitted, total }: { submitted: number; total: number })
 export function PortalClient({ show, artist, materials: initialMaterials, initialToken }: PortalClientProps) {
   const [materials, setMaterials] = useState<Material[]>(initialMaterials)
   const [confettiFired, setConfettiFired] = useState(false)
+  const [notificationSent, setNotificationSent] = useState(false)
 
   const isShowPast = show.show_date ? isPast(new Date(show.show_date)) : false
   const submittedCount = materials.filter(m => m.status === 'submitted' || m.status === 'delivered').length
   const totalCount = materials.length
   const allDone = totalCount > 0 && submittedCount === totalCount
 
-  // Fire confetti once when all done
+  // Fire confetti and notify promoter once when all done
   useEffect(() => {
     if (allDone && !confettiFired) {
       setConfettiFired(true)
+      
+      // 1. Celebration
       confetti({
         particleCount: 150,
         spread: 80,
         origin: { y: 0.55 },
         colors: ['#4f46e5', '#10b981', '#f59e0b', '#818cf8'],
       })
+
+      // 2. Final Webhook (Show Ready)
+      if (!notificationSent) {
+        const triggerReady = async () => {
+          const webhookUrl = process.env.NEXT_PUBLIC_N8N_READY_WEBHOOK
+          if (!webhookUrl) return
+
+          try {
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event: 'show_ready',
+                show_id: show.id,
+                artist_id: artist.id,
+                artist_name: artist.name,
+                venue_name: show.venue,
+                submission_date: new Date().toISOString(),
+              }),
+            })
+            setNotificationSent(true)
+          } catch (err) {
+            console.error('Failed to notify promoter:', err)
+          }
+        }
+        triggerReady()
+      }
     }
-  }, [allDone, confettiFired])
+  }, [allDone, confettiFired, notificationSent, show.id, show.venue, artist.id, artist.name])
 
   // Re-fetch materials from Supabase after upload
   const refreshMaterials = useCallback(async () => {

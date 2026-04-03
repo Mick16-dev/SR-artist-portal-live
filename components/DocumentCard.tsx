@@ -63,7 +63,7 @@ export function DocumentCard({ material, isShowPast, onUploadSuccess }: Document
       return
     }
 
-    const webhookUrl = process.env.NEXT_PUBLIC_N8N_UPLOAD_WEBHOOK
+    const webhookUrl = process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK
     if (!webhookUrl) {
       setUploadError('Upload service is not configured. Please contact your promoter.')
       return
