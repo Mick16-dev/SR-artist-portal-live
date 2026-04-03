@@ -16,12 +16,23 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<{ token?: string }>
 }) {
-  const { token } = await searchParams
+  const { token, preview } = await searchParams
 
-  // 1. Check if token is present
-  if (!token) {
-    // If no token, we show a professional welcome/access request page
+  // 1. Check if token or preview is present
+  if (!token && preview !== 'true') {
     return <Welcome />
+  }
+
+  // Preview Mode for immediate verification of the "Backbone" UI
+  if (preview === 'true') {
+     const mockShow = { venue_name: "The Grand Arena", city: "London", show_date: "2026-06-15", show_time: "20:00", promoter_name: "ShowReady Global", promoter_email: "support@showready.com" }
+     const mockArtist = { name: "Sample Artist" }
+     const mockMaterials = [
+       { id: "1", item_name: "Technical Rider", status: "pending", deadline: "2026-06-01", portal_token: "mock-1" },
+       { id: "2", item_name: "Press Kit", status: "submitted", deadline: "2026-05-15", portal_token: "mock-2", file_url: "#", submitted_at: "2026-05-10" },
+       { id: "3", item_name: "Contract", status: "pending", deadline: "2026-04-01", portal_token: "mock-3" } // Overdue
+     ]
+     return <PortalClient show={mockShow as any} artist={mockArtist as any} materials={mockMaterials as any} token="preview-mode" />
   }
 
   const supabase = getSupabase()
