@@ -17,9 +17,10 @@ export default async function PortalPage({
   searchParams: Promise<{ token?: string, preview?: string }>
 }) {
   const { token, preview } = await searchParams
+  const cleanToken = token?.trim()
 
   // 1. Check if token or preview is present
-  if (!token && preview !== 'true') {
+  if (!cleanToken && preview !== 'true') {
     return <Welcome />
   }
 
@@ -41,7 +42,7 @@ export default async function PortalPage({
   const { data: tokenMaterial, error } = await supabase
     .from('materials')
     .select('*')
-    .eq('portal_token', token)
+    .eq('portal_token', cleanToken)
     .single()
 
   // 3. Handle Invalid Token state
@@ -92,7 +93,7 @@ export default async function PortalPage({
       show={show}
       artist={artist}
       materials={materials}
-      token={token ?? 'preview-mode'}
+      token={cleanToken ?? 'preview-mode'}
     />
   )
 }
