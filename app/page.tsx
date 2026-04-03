@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import { PortalClient } from '@/components/PortalClient'
 import { InvalidToken } from '@/components/InvalidToken'
 import { ExpiredToken } from '@/components/ExpiredToken'
@@ -6,9 +8,12 @@ import { Welcome } from '@/components/Welcome'
 
 // Server-side Supabase client for secure data fetching
 function getSupabase() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Supabase environment variables are missing')
+  }
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
 }
 
