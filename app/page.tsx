@@ -38,43 +38,46 @@ export default async function PortalPage({
 
   const supabase = getSupabase()
 
-  // 2. Validate token (Material verification)
-  const { data: tokenMaterial, error } = await supabase
+  let showId = ''
+  let artistId = ''
+  let materialFromToken = null
+
+  // 2. Validate token (Material lookup first)
+  const { data: tokenMaterial } = await supabase
     .from('materials')
     .select('*')
     .eq('portal_token', cleanToken)
-    .single()
+    .maybeSingle()
 
-  // 3. Handle Invalid Token state
-  if (error || !tokenMaterial) {
+  if (tokenMaterial) {
+    showId = tokenMaterial.show_id
+    artistId = tokenMaterial.artist_id
+    materialFromToken = tokenMaterial
+  } else {
+    // 3. Fallback: Check if the token is a Show ID directly
+    const { data: showFromId } = await supabase
+      .from('shows')
+      .select('*')
+      .eq('id', cleanToken)
+      .maybeSingle()
+
+    if (showFromId) {
+      showId = showFromId.id
+      artistId = showFromId.artist_id
+    }
+  }
+
+  // 4. Handle Invalid Token state
+  if (!showId) {
     return <InvalidToken />
   }
 
-  // 4. Handle Expired Token state
-  if (tokenMaterial.expires_at && new Date(tokenMaterial.expires_at) < new Date()) {
-    return <ExpiredToken expiresAt={tokenMaterial.expires_at} promoterEmail={tokenMaterial.promoter_email} />
-  }
-
-  // 5. Success Flow - Fetch all materials for this show
-  const { data: materials } = await supabase
-    .from('materials')
-    .select('*')
-    .eq('show_id', tokenMaterial.show_id)
-    .order('deadline', { ascending: true })
-
-  // 6. Fetch Show Details
-  const { data: show } = await supabase
-    .from('shows')
-    .select('*')
-    .eq('id', tokenMaterial.show_id)
-    .single()
-
-  // 7. Fetch Artist Details
-  const { data: artist } = await supabase
-    .from('artists')
-    .select('*')
-    .eq('id', tokenMaterial.artist_id)
-    .single()
+  // 5. Success Flow - Fetch all materials, show, and artist
+  const [{ data: materials }, { data: show }, { data: artist }] = await Promise.all([
+    supabase.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
+    supabase.from('shows').select('*').eq('id', showId).maybeSingle(),
+    supabase.from('artists').select('*').eq('id', artistId).maybeSingle()
+  ])
 
   // Safety check for critical data
   if (!show || !artist || !materials) {
