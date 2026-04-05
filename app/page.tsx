@@ -125,12 +125,16 @@ export default async function PortalPage({
     )
   }
 
+  // 6. Return the Client Component
+  // Distinguish between 'preview-mode' (for mock data) and 'public-mode' (for real data fallback)
+  const uiToken = cleanToken ?? (preview === 'true' ? 'preview-mode' : 'public-mode')
+
   return (
     <PortalClient
       show={show}
       artist={artist}
       materials={materials}
-      token={cleanToken ?? 'preview-mode'}
+      token={uiToken}
     />
   )
 }
