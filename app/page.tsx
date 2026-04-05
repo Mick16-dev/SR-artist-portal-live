@@ -54,16 +54,16 @@ export default async function PortalPage({
     artistId = tokenMaterial.artist_id
     materialFromToken = tokenMaterial
   } else {
-    // 3. Fallback: Check if the token is a Show ID directly
-    const { data: showFromId } = await supabase
+    // 3. Fallback: Check if the token is a Show ID OR matches a portal_token in the shows table
+    const { data: showFromToken } = await supabase
       .from('shows')
       .select('*')
-      .eq('id', cleanToken)
+      .or(`id.eq.${cleanToken},portal_token.eq.${cleanToken}`)
       .maybeSingle()
 
-    if (showFromId) {
-      showId = showFromId.id
-      artistId = showFromId.artist_id
+    if (showFromToken) {
+      showId = showFromToken.id
+      artistId = showFromToken.artist_id
     }
   }
 
