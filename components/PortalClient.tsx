@@ -232,14 +232,22 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               </div>
               
               <div className="space-y-6">
-                 {materialsToRender.map((m, idx) => (
-                    <DocumentCard 
-                       key={m.id} 
-                       material={m} 
-                       onUpload={handleUpload}
-                       index={idx}
-                    />
-                 ))}
+                 {materialsToRender.length === 0 ? (
+                    <div className="p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center space-y-4">
+                       <span className="text-4xl">📂</span>
+                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No Production Documents Currently Required</p>
+                       <p className="text-slate-500 text-sm">The promoter has not scheduled any mandatory materials for this show yet.</p>
+                    </div>
+                 ) : (
+                   materialsToRender.map((m, idx) => (
+                      <DocumentCard 
+                         key={m.id} 
+                         material={m} 
+                         onUpload={handleUpload}
+                         index={idx}
+                      />
+                   ))
+                 )}
               </div>
            </section>
 
@@ -268,6 +276,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                          <p className="text-xl font-black tracking-tight text-slate-900 italic">
                             {show?.show_date ? format(new Date(show.show_date), 'MMMM do, yyyy') : 'Date TBA'}
                          </p>
+                         {show?.show_time && (
+                           <p className="text-sm font-bold text-slate-500 tracking-widest uppercase mt-4 border-t border-slate-200 pt-4">
+                             Doors/Start: <span className="text-indigo-600">{show.show_time}</span>
+                           </p>
+                         )}
                       </div>
                     </div>
                  </div>

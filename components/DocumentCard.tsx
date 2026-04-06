@@ -41,6 +41,7 @@ interface DocumentCardProps {
   material: {
     id: string
     item_name: string
+    name?: string
     description?: string
     status: 'pending' | 'submitted'
     deadline: string
@@ -58,6 +59,7 @@ export function DocumentCard({ material, onUpload, index }: DocumentCardProps) {
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const displayName = material.item_name || material.name || 'Required Document'
   const isSubmitted = material.status === 'submitted'
   const deadlineDate = new Date(material.deadline)
   const isOverdue = !isSubmitted && isPast(deadlineDate)
@@ -85,7 +87,7 @@ export function DocumentCard({ material, onUpload, index }: DocumentCardProps) {
     setAbortController(controller)
     setIsUploading(true)
     
-    const success = await onUpload(material.portal_token, file, material.item_name)
+    const success = await onUpload(material.portal_token, file, displayName)
     
     if (success) {
       // Success is handled by PortalClient's real-time sync
@@ -123,12 +125,12 @@ export function DocumentCard({ material, onUpload, index }: DocumentCardProps) {
       <div className="flex-1 space-y-6">
         <div className="flex items-start gap-4">
            <div className={`p-4 rounded-2xl shrink-0 transition-colors ${isSubmitted ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
-              {material.item_name.toLowerCase().includes('photo') ? <Icons.Camera /> : <Icons.File />}
+              {displayName.toLowerCase().includes('photo') ? <Icons.Camera /> : <Icons.File />}
            </div>
            
            <div className="space-y-1">
               <h3 className="text-3xl font-black tracking-tighter italic uppercase text-slate-900 leading-none">
-                 {material.item_name}
+                 {displayName}
               </h3>
               <p className="text-sm font-medium text-slate-400 group-hover:text-slate-500 transition-colors">
                  {material.description || 'Mandatory technical requirement'}
