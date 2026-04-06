@@ -121,11 +121,7 @@ export default async function PortalPage({
     }
   }
 
-  // 4. Handle Invalid Token state - show diagnostic info
-  if (!showId) {
-    return <InvalidToken receivedToken={cleanToken || 'none'} />
-  }
-
+  // 4. Continue even without showId so token-based material fallback can still recover access.
   // 5. Success Flow - Fetch all data
   const isResolvedShowIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId || '')
   const [showById] = await Promise.all([
@@ -144,7 +140,7 @@ export default async function PortalPage({
 
   const { data: materialsData } = materialShowKeys.length
     ? await supabase!.from('materials').select('*').in('show_id', materialShowKeys).order('deadline', { ascending: true })
-    : await supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true })
+    : Promise.resolve({ data: [] as any[] })
 
   let materials = materialsData || []
 
@@ -163,20 +159,7 @@ export default async function PortalPage({
 
   // Safety check
   if (!show && materials.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-6">
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">
-           <span className="text-sm font-black text-slate-900 tracking-tighter italic uppercase block mb-2">PS-promotion</span>
-          Data Conflict
-        </p>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-xs text-left font-mono space-y-2 w-full max-w-md">
-           <p className="text-red-600 font-bold uppercase">Debug Info:</p>
-           <p className="text-slate-600">showId resolved to: <strong>{showId}</strong></p>
-           <p className="text-slate-600">Token received: <strong>{cleanToken}</strong></p>
-           <p className="text-slate-500 mt-2">No show row matched this material link. Verify <strong>materials.show_id</strong> points to an existing <strong>shows.id</strong>, and that the token exists in <strong>materials.portal_token</strong>.</p>
-        </div>
-      </div>
-    )
+    return <InvalidToken receivedToken={cleanToken || 'none'} />
   }
 
   // Graceful Fallbacks for missing relational data
