@@ -15,7 +15,7 @@ const Icons = {
   )
 }
 
-export function InvalidToken() {
+export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-red-500/20 antialiased overflow-hidden text-white">
       {/* Utility Header */}
@@ -85,6 +85,14 @@ export function InvalidToken() {
                  </div>
                  <div className="absolute inset-0 bg-gradient-to-br from-red-600/5 to-transparent pointer-events-none" />
               </div>
+
+              {receivedToken && receivedToken !== 'none' && (
+                 <div className="mt-8 p-5 bg-white/5 rounded-2xl border border-white/10 text-left">
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Received Token (for debugging)</p>
+                    <p className="font-mono text-sm text-amber-400 break-all">{receivedToken}</p>
+                    <p className="text-[10px] text-white/20 mt-2">Compare this to the <span className="text-white/40 font-bold">portal_token</span> column in your Supabase <span className="text-white/40 font-bold">shows</span> table.</p>
+                 </div>
+               )}
            </motion.div>
         </div>
 

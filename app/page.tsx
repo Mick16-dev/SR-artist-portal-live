@@ -72,57 +72,75 @@ export default async function PortalPage({
      ]
      return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
-    // 2. Validate token - MULTI-LAYER LOOKUP
-    // Strategy: 
-    // A. Check the 'portal_token' column in 'shows' (Standardized Token)
-    // B. If not found and is UUID, check 'id' column in 'shows' (Legacy/Fallback)
-    // C. If still not found, check 'portal_token' in 'materials'
+    // MULTI-LAYER TOKEN LOOKUP
+    // The URL token might be:
+    // A) The short showPortalToken stored in shows.portal_token (standard)
+    // B) A UUID stored in shows.id (raw show UUID fallback)
+    // C) A UUID n8n generated stored in shows.show_id (n8n-generated field)
+    // D) The portal_token on a material row
 
-    const { data: showLink } = await supabase!
+    // Layer A: Check shows.portal_token (primary path)
+    const { data: byPortalToken } = await supabase!
       .from('shows')
       .select('id, artist_id')
       .eq('portal_token', cleanToken)
       .maybeSingle()
 
-    if (showLink) {
-      showId = showLink.id
-      artistId = showLink.artist_id
-    } else {
-      // Not in show portal_token, check if it's a UUID for the main show ID
+    if (byPortalToken) {
+      showId = byPortalToken.id
+      artistId = byPortalToken.artist_id
+    }
+
+    // Layer B: Check shows.id directly (valid UUID format)
+    if (!showId) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
       if (isUuid) {
-        const { data: rawShow } = await supabase!
+        const { data: byId } = await supabase!
           .from('shows')
           .select('id, artist_id')
           .eq('id', cleanToken)
           .maybeSingle()
-        
-        if (rawShow) {
-          showId = rawShow.id
-          artistId = rawShow.artist_id
+
+        if (byId) {
+          showId = byId.id
+          artistId = byId.artist_id
         }
       }
+    }
 
-      // Still no show? Check materials
-      if (!showId) {
-        const { data: materialLink } = await supabase!
-          .from('materials')
-          .select('show_id, artist_id')
-          .eq('portal_token', cleanToken)
-          .limit(1)
-          .maybeSingle()
+    // Layer C: Check shows.show_id (some n8n workflows store show ID here)
+    if (!showId) {
+      const { data: byShowId } = await supabase!
+        .from('shows')
+        .select('id, artist_id')
+        .eq('show_id', cleanToken)
+        .maybeSingle()
 
-        if (materialLink) {
-          showId = materialLink.show_id
-          artistId = materialLink.artist_id
-        }
+      if (byShowId) {
+        showId = byShowId.id
+        artistId = byShowId.artist_id
+      }
+    }
+
+    // Layer D: Check materials.portal_token
+    if (!showId) {
+      const { data: materialLink } = await supabase!
+        .from('materials')
+        .select('show_id, artist_id')
+        .eq('portal_token', cleanToken)
+        .limit(1)
+        .maybeSingle()
+
+      if (materialLink) {
+        showId = materialLink.show_id
+        artistId = materialLink.artist_id
       }
     }
   }
 
-  // 4. Handle Invalid Token state
+  // 4. Handle Invalid Token state - show diagnostic info
   if (!showId) {
-    return <InvalidToken />
+    return <InvalidToken receivedToken={cleanToken || 'none'} />
   }
 
   // 5. Success Flow - Fetch all materials, show, and artist
