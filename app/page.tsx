@@ -30,6 +30,7 @@ export default async function PortalPage({
 
   let showId = ''
   let showRecord: Record<string, any> | null = null
+  let forceInvalidToken = false
 
   if (!supabase && preview !== 'true') {
     return (
@@ -108,7 +109,9 @@ export default async function PortalPage({
     }
 
     // Priority 3: materials-level token links.
-    // materials.portal_token -> materials.show_id -> shows.id
+    // Permanent rule:
+    // - if show_id hint exists: token must match materials.portal_token AND materials.show_id exactly
+    // - if no show_id hint: token must map to exactly one distinct show_id
     const { data: materialLinks } = cleanToken
       ? await supabase!
           .from('materials')
@@ -119,31 +122,44 @@ export default async function PortalPage({
       : { data: [] as any[] }
 
     if (!showId && materialLinks?.length) {
-      // If show hint exists, keep only materials for that show_id.
-      const filteredLinks = showHintId
-        ? materialLinks.filter((m) => normalizeKey(m.show_id) === showHintId)
-        : materialLinks
-
-      const linksToUse = filteredLinks.length ? filteredLinks : materialLinks
-      const showCandidates = Array.from(
-        new Set(linksToUse.map((m) => normalizeKey(m.show_id)).filter(Boolean))
+      const distinctShowIds = Array.from(
+        new Set(materialLinks.map((m) => normalizeKey(m.show_id)).filter(Boolean))
       )
 
-      if (showCandidates.length) {
-        const { data: matchedShows } = await supabase!
-          .from('shows')
-          .select('*')
-          .in('id', showCandidates)
-          .order('created_at', { ascending: false })
+      if (showHintId) {
+        const strictLinks = materialLinks.filter((m) => normalizeKey(m.show_id) === showHintId)
+        if (!strictLinks.length) {
+          forceInvalidToken = true
+        } else {
+          const { data: hintedShow } = await supabase!
+            .from('shows')
+            .select('*')
+            .eq('id', showHintId)
+            .maybeSingle()
 
-        if (matchedShows?.length) {
-          // Deterministic choice: newest show row wins when one token maps to multiple shows.
-          const preferredShow = matchedShows[0]
-          if (preferredShow) {
-            showId = normalizeKey(preferredShow.id)
-            showRecord = preferredShow
+          if (hintedShow) {
+            showId = showHintId
+            showRecord = hintedShow
+          } else {
+            forceInvalidToken = true
           }
         }
+      } else if (distinctShowIds.length === 1) {
+        // Safe legacy mode: token uniquely identifies one show.
+        const onlyShowId = distinctShowIds[0]
+        const { data: singleShow } = await supabase!
+          .from('shows')
+          .select('*')
+          .eq('id', onlyShowId)
+          .maybeSingle()
+
+        if (singleShow) {
+          showId = onlyShowId
+          showRecord = singleShow
+        }
+      } else if (distinctShowIds.length > 1) {
+        // Ambiguous token reuse -> refuse to guess.
+        forceInvalidToken = true
       }
     }
 
@@ -216,9 +232,11 @@ export default async function PortalPage({
       .order('deadline', { ascending: true })
 
     if (materialsByToken?.length) {
-      const scopedByShow = showId
-        ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showId)
-        : materialsByToken
+      const scopedByShow = showHintId
+        ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showHintId)
+        : showId
+          ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showId)
+          : materialsByToken
 
       const tokenMaterials = scopedByShow.length ? scopedByShow : materialsByToken
       const merged = new Map<string, any>()
@@ -245,7 +263,7 @@ export default async function PortalPage({
   const materialFallback = materials[0] || null
 
   // Safety check
-  if (!show && materials.length === 0) {
+  if (forceInvalidToken || (!show && materials.length === 0)) {
     return <InvalidToken receivedToken={cleanToken || 'none'} />
   }
 
