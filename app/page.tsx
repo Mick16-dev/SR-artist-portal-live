@@ -132,17 +132,25 @@ export default async function PortalPage({
     supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
   ])
 
-  // Safety check for critical data
-  if (!show || !artist || !materials) {
+  // Safety check for critical data - heavily relaxed to allow partial database matching
+  if (!show) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-10 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-6">
         <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">
-           <span className="text-sm font-black text-white/20 tracking-tighter italic uppercase group-hover:text-red-500">PS-promotion</span>
-          Disconnected. Please refresh your browser.
+           <span className="text-sm font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-red-500 block mb-2">PS-promotion</span>
+          Data Conflict
         </p>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-xs text-left font-mono space-y-2 w-full max-w-md">
+           <p className="text-red-600 font-bold uppercase">Critical Failure:</p>
+           <p className="text-slate-600">The core Show database row could not be found. Please ensure this show was successfully created in the Promoter Dashboard.</p>
+        </div>
       </div>
     )
   }
+
+  // Graceful Fallbacks for missing relational data
+  const safeArtist = artist || { name: 'Artist TBA' }
+  const safeMaterials = materials || []
 
   // 6. Return the Client Component
   // Distinguish between 'preview-mode' (for mock data) and 'public-mode' (for real data fallback)
@@ -151,8 +159,8 @@ export default async function PortalPage({
   return (
     <PortalClient
       show={show}
-      artist={artist}
-      materials={materials}
+      artist={safeArtist}
+      materials={safeMaterials}
       token={uiToken}
       showId={showId}
     />
