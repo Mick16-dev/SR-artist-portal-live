@@ -4,9 +4,11 @@ import { InvalidToken } from '@/components/InvalidToken'
 import { Welcome } from '@/components/Welcome'
 
 // Server-side Supabase client for SSR
+// Uses SERVICE ROLE key (bypasses RLS) - safe because this runs server-side only
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Prefer service role key to bypass RLS; fall back to anon key
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
   return createClient(url, key)
 }
