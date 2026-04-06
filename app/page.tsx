@@ -20,11 +20,12 @@ function normalizeKey(value: unknown) {
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string, portal_token?: string, show_token?: string, t?: string, preview?: string }>
+  searchParams: Promise<{ token?: string, portal_token?: string, show_token?: string, t?: string, show_id?: string, sid?: string, preview?: string }>
 }) {
-  const { token, portal_token, show_token, t, preview } = await searchParams
+  const { token, portal_token, show_token, t, show_id, sid, preview } = await searchParams
   const rawToken = token ?? portal_token ?? show_token ?? t
   const cleanToken = rawToken ? normalizeKey(decodeURIComponent(rawToken)) : undefined
+  const showHintId = normalizeKey(show_id ?? sid)
   const supabase = getSupabase()
 
   let showId = ''
@@ -78,26 +79,52 @@ export default async function PortalPage({
      ]
      return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
+    // Priority 1: explicit show identifier from URL query.
+    if (showHintId) {
+      const { data: hintedShow } = await supabase!
+        .from('shows')
+        .select('*')
+        .eq('id', showHintId)
+        .maybeSingle()
+
+      if (hintedShow) {
+        showId = normalizeKey(hintedShow.id)
+        showRecord = hintedShow
+      }
+    }
+
     // Token resolution that matches your schema:
     // materials.portal_token -> materials.show_id -> shows.id
-    const { data: materialLinks } = await supabase!
-      .from('materials')
-      .select('*')
-      .eq('portal_token', cleanToken)
-      .limit(50)
+    const { data: materialLinks } = cleanToken
+      ? await supabase!
+          .from('materials')
+          .select('*')
+          .eq('portal_token', cleanToken)
+          .order('created_at', { ascending: false })
+          .limit(200)
+      : { data: [] as any[] }
 
-    if (materialLinks?.length) {
-      const showCandidates = Array.from(new Set(materialLinks.map((m) => normalizeKey(m.show_id)).filter(Boolean)))
+    if (!showId && materialLinks?.length) {
+      // If show hint exists, keep only materials for that show_id.
+      const filteredLinks = showHintId
+        ? materialLinks.filter((m) => normalizeKey(m.show_id) === showHintId)
+        : materialLinks
 
-      if (showCandidates.length) {
+      const linksToUse = filteredLinks.length ? filteredLinks : materialLinks
+      // Group by show_id and pick the newest linked show first.
+      const sortedShowCandidates = Array.from(
+        new Set(linksToUse.map((m) => normalizeKey(m.show_id)).filter(Boolean))
+      )
+
+      if (sortedShowCandidates.length) {
         const { data: matchedShows } = await supabase!
           .from('shows')
           .select('*')
-          .in('id', showCandidates)
+          .in('id', sortedShowCandidates)
 
         if (matchedShows?.length) {
           const matchedIds = new Set(matchedShows.map((s) => normalizeKey(s.id)))
-          const firstValid = materialLinks.find((m) => matchedIds.has(normalizeKey(m.show_id)))
+          const firstValid = linksToUse.find((m) => matchedIds.has(normalizeKey(m.show_id)))
 
           if (firstValid) {
             showId = normalizeKey(firstValid.show_id)
@@ -162,9 +189,14 @@ export default async function PortalPage({
       .order('deadline', { ascending: true })
 
     if (materialsByToken?.length) {
+      const scopedByShow = showId
+        ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showId)
+        : materialsByToken
+
+      const tokenMaterials = scopedByShow.length ? scopedByShow : materialsByToken
       const merged = new Map<string, any>()
       for (const row of materials) merged.set(normalizeKey(row.id), row)
-      for (const row of materialsByToken) merged.set(normalizeKey(row.id), row)
+      for (const row of tokenMaterials) merged.set(normalizeKey(row.id), row)
       materials = Array.from(merged.values())
     }
   }
