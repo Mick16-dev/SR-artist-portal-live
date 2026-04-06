@@ -233,19 +233,15 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               
               <div className="space-y-6">
                  {materialsToRender.length === 0 ? (
-                    [
-                      { id: 'fb1', item_name: 'EPK', description: 'Electronic Press Kit', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
-                      { id: 'fb2', item_name: 'CONTRACT', description: 'Signed Contract', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
-                      { id: 'fb3', item_name: 'TECHNICAL RIDER', description: 'Hardware & Stage Plot', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
-                      { id: 'fb4', item_name: 'OTHER PROMOTER FILES', description: 'Any additional requested files', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token }
-                    ].map((m, idx) => (
-                       <DocumentCard 
-                          key={m.id} 
-                          material={m} 
-                          onUpload={handleUpload}
-                          index={idx}
-                       />
-                    ))
+                    <div className="p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center space-y-4 shadow-sm">
+                       <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                          <span className="text-2xl">🔒</span>
+                       </div>
+                       <p className="text-slate-900 font-black uppercase tracking-widest text-sm">No Active Documents</p>
+                       <p className="text-slate-500 text-sm font-semibold max-w-sm">
+                          The promoter has not scheduled any mandatory materials for this specific show in the database yet.
+                       </p>
+                    </div>
                  ) : (
                    materialsToRender.map((m, idx) => (
                       <DocumentCard 
