@@ -233,11 +233,19 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               
               <div className="space-y-6">
                  {materialsToRender.length === 0 ? (
-                    <div className="p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center space-y-4">
-                       <span className="text-4xl">📂</span>
-                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No Production Documents Currently Required</p>
-                       <p className="text-slate-500 text-sm">The promoter has not scheduled any mandatory materials for this show yet.</p>
-                    </div>
+                    [
+                      { id: 'fb1', item_name: 'EPK', description: 'Electronic Press Kit', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
+                      { id: 'fb2', item_name: 'CONTRACT', description: 'Signed Contract', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
+                      { id: 'fb3', item_name: 'TECHNICAL RIDER', description: 'Hardware & Stage Plot', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token },
+                      { id: 'fb4', item_name: 'OTHER PROMOTER FILES', description: 'Any additional requested files', status: 'pending' as const, deadline: show?.show_date || new Date().toISOString(), portal_token: token }
+                    ].map((m, idx) => (
+                       <DocumentCard 
+                          key={m.id} 
+                          material={m} 
+                          onUpload={handleUpload}
+                          index={idx}
+                       />
+                    ))
                  ) : (
                    materialsToRender.map((m, idx) => (
                       <DocumentCard 
