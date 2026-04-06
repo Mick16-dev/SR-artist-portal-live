@@ -39,7 +39,7 @@ export default async function PortalPage({
   // 1. Check if token or preview is present
   if (!cleanToken && preview !== 'true' && supabase) {
     // PUBLIC FALLBACK: If no token provided, try to fetch the most recent show as a "public" preview
-    const { data: latestShow } = await supabase
+    const { data: latestShow } = await supabase!
       .from('shows')
       .select('*')
       .order('created_at', { ascending: false })
@@ -78,7 +78,7 @@ export default async function PortalPage({
     // B. If not found and is UUID, check 'id' column in 'shows' (Legacy/Fallback)
     // C. If still not found, check 'portal_token' in 'materials'
 
-    const { data: showLink } = await supabase
+    const { data: showLink } = await supabase!
       .from('shows')
       .select('id, artist_id')
       .eq('portal_token', cleanToken)
@@ -91,7 +91,7 @@ export default async function PortalPage({
       // Not in show portal_token, check if it's a UUID for the main show ID
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
       if (isUuid) {
-        const { data: rawShow } = await supabase
+        const { data: rawShow } = await supabase!
           .from('shows')
           .select('id, artist_id')
           .eq('id', cleanToken)
@@ -105,7 +105,7 @@ export default async function PortalPage({
 
       // Still no show? Check materials
       if (!showId) {
-        const { data: materialLink } = await supabase
+        const { data: materialLink } = await supabase!
           .from('materials')
           .select('show_id, artist_id')
           .eq('portal_token', cleanToken)
@@ -127,9 +127,9 @@ export default async function PortalPage({
 
   // 5. Success Flow - Fetch all materials, show, and artist
   const [{ data: materials }, { data: show }, { data: artist }] = await Promise.all([
-    supabase.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
-    supabase.from('shows').select('*').eq('id', showId).maybeSingle(),
-    supabase.from('artists').select('*').eq('id', artistId).maybeSingle()
+    supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
+    supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
+    supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
   ])
 
   // Safety check for critical data
