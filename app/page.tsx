@@ -242,6 +242,9 @@ export default async function PortalPage({
     }
   }
 
+  // If shows lookup failed, build a best-effort show model from material fields.
+  const materialFallback = materials[0] || null
+
   // Safety check
   if (!show && materials.length === 0) {
     return <InvalidToken receivedToken={cleanToken || 'none'} />
@@ -256,16 +259,16 @@ export default async function PortalPage({
         promoter_email: show.promoter_email || show.artist_email || '',
       }
     : {
-        venue_name: 'Show Details Pending Sync',
-        city: 'TBA',
-        show_date: '',
-        show_time: 'TBA',
-        promoter_name: 'Promoter Team',
-        promoter_email: '',
+        venue_name: materialFallback?.venue_name || materialFallback?.venue || 'Show Details Pending Sync',
+        city: materialFallback?.city || 'TBA',
+        show_date: materialFallback?.show_date || '',
+        show_time: materialFallback?.show_time || 'TBA',
+        promoter_name: materialFallback?.promoter_name || 'Promoter Team',
+        promoter_email: materialFallback?.promoter_email || materialFallback?.artist_email || '',
       }
 
   const materialArtistName = materials.find((m) => typeof m.artist_name === 'string' && m.artist_name.trim())?.artist_name
-  const safeArtist = { name: show?.artist_name || materialArtistName || 'Artist TBA' }
+  const safeArtist = { name: show?.artist_name || materialArtistName || materialFallback?.artist_name || 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
