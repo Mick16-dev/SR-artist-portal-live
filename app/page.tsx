@@ -155,12 +155,22 @@ export default async function PortalPage({
 
   // 5. Success Flow - Fetch all data
   // Try both id and show_id column to cover different Supabase schema setups
-  const [showById, showByShowId] = await Promise.all([
-    showRecord ? Promise.resolve({ data: showRecord }) : supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
-    showRecord ? Promise.resolve({ data: null }) : supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
+  const isResolvedShowIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId || '')
+  const [showById, showByShowId, showByPortalToken] = await Promise.all([
+    showRecord
+      ? Promise.resolve({ data: showRecord, error: null })
+      : isResolvedShowIdUuid
+        ? supabase!.from('shows').select('*').eq('id', showId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    showRecord
+      ? Promise.resolve({ data: null, error: null })
+      : supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
+    showRecord || !cleanToken
+      ? Promise.resolve({ data: null, error: null })
+      : supabase!.from('shows').select('*').eq('portal_token', cleanToken).maybeSingle(),
   ])
 
-  const show = showRecord || showById.data || showByShowId.data
+  const show = showRecord || showById.data || showByShowId.data || showByPortalToken.data
 
   const materialShowKeys = [
     showId,
