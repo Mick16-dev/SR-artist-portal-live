@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { format } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
@@ -58,11 +58,10 @@ interface PortalClientProps {
   artist: Artist
   materials: Material[]
   token: string
+  showId: string
 }
 
-export function PortalClient({ show, artist, materials: initialMaterials, token }: PortalClientProps) {
-  const [materials, setMaterials] = useState<Material[]>(initialMaterials)
-  const [isSyncing, setIsSyncing] = useState(false)
+export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
 
   // Standard 5-Document Production Blueprint
   const productionBlueprint = [
@@ -83,7 +82,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
     deadline: '2026-05-01',
     portal_token: `preview-${i}`,
     file_url: '#'
-  })) as Material[] : materials
+  })) as Material[] : initialMaterials
 
   // Real-Time Production Sync
   useEffect(() => {
@@ -100,15 +99,15 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
         event: '*', 
         schema: 'public', 
         table: 'materials',
-        filter: `portal_token=eq.${token}`
-      }, (payload) => {
-        // Instant refresh on any database change
+        filter: `show_id=eq.${showId}`
+      }, () => {
+        // Instant refresh on any database change for THIS show
         window.location.reload() 
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [token, isPreview])
+  }, [showId, isPreview])
 
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
@@ -142,7 +141,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token 
       toast.success(`${name} transmitted to production.`)
       // Note: Real state sync would happen via Supabase subscription or refresh
       return true
-    } catch (e) {
+    } catch {
       toast.error('Transmission failed. Check network status.')
       return false
     }

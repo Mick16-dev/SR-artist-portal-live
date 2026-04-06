@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { PortalClient } from '@/components/PortalClient'
 import { InvalidToken } from '@/components/InvalidToken'
-import { ExpiredToken } from '@/components/ExpiredToken'
 import { Welcome } from '@/components/Welcome'
 
 // Server-side Supabase client for SSR
@@ -22,7 +21,6 @@ export default async function PortalPage({
 
   let showId = ''
   let artistId = ''
-  let materialFromToken = null
 
   // 1. Check if token or preview is present
   if (!cleanToken && preview !== 'true') {
@@ -54,15 +52,18 @@ export default async function PortalPage({
      }
      const mockArtist = { name: "Sample Artist" }
      const mockMaterials = [
-       { id: "1", item_name: "Technical Rider", status: "pending", deadline: "2026-06-01", portal_token: "mock-1" },
-       { id: "2", item_name: "Press Kit", status: "submitted", deadline: "2026-05-15", portal_token: "mock-2", file_url: "#", submitted_at: "2026-05-10" },
-       { id: "3", item_name: "Contract", status: "pending", deadline: "2026-04-01", portal_token: "mock-3" } // Overdue
+       { id: "1", item_name: "Technical Rider", status: "pending" as const, deadline: "2026-06-01", portal_token: "mock-1" },
+       { id: "2", item_name: "Press Kit", status: "submitted" as const, deadline: "2026-05-15", portal_token: "mock-2", file_url: "#", submitted_at: "2026-05-10" },
+       { id: "3", item_name: "Contract", status: "pending" as const, deadline: "2026-04-01", portal_token: "mock-3" } // Overdue
      ]
-     return <PortalClient show={mockShow as any} artist={mockArtist as any} materials={mockMaterials as any} token="preview-mode" />
+     return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
     // 2. Validate token - MULTI-LAYER LOOKUP
-    
-    // Priority A: Check if the token matches a Show directly (Master Token)
+    // Strategy: 
+    // A. Check the 'portal_token' column in 'shows' (Standardized Token)
+    // B. If not found and is UUID, check 'id' column in 'shows' (Legacy/Fallback)
+    // C. If still not found, check 'portal_token' in 'materials'
+
     const { data: showLink } = await supabase
       .from('shows')
       .select('id, artist_id')
@@ -73,20 +74,9 @@ export default async function PortalPage({
       showId = showLink.id
       artistId = showLink.artist_id
     } else {
-      // Priority B: Check if it's a specific Material Token
-      // Use .limit(1) to avoid errors if multiple materials share the same token (handshake safety)
-      const { data: materialLink } = await supabase
-        .from('materials')
-        .select('show_id, artist_id')
-        .eq('portal_token', cleanToken)
-        .limit(1)
-        .maybeSingle()
-
-      if (materialLink) {
-        showId = materialLink.show_id
-        artistId = materialLink.artist_id
-      } else {
-        // Priority C: Check if it's a raw Show ID
+      // Not in show portal_token, check if it's a UUID for the main show ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
+      if (isUuid) {
         const { data: rawShow } = await supabase
           .from('shows')
           .select('id, artist_id')
@@ -96,6 +86,21 @@ export default async function PortalPage({
         if (rawShow) {
           showId = rawShow.id
           artistId = rawShow.artist_id
+        }
+      }
+
+      // Still no show? Check materials
+      if (!showId) {
+        const { data: materialLink } = await supabase
+          .from('materials')
+          .select('show_id, artist_id')
+          .eq('portal_token', cleanToken)
+          .limit(1)
+          .maybeSingle()
+
+        if (materialLink) {
+          showId = materialLink.show_id
+          artistId = materialLink.artist_id
         }
       }
     }
@@ -135,6 +140,7 @@ export default async function PortalPage({
       artist={artist}
       materials={materials}
       token={uiToken}
+      showId={showId}
     />
   )
 }
