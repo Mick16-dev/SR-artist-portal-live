@@ -51,8 +51,8 @@ export default async function PortalPage({
       .maybeSingle()
 
     if (latestShow) {
-      showId = latestShow.id
-      artistId = latestShow.artist_id
+      showId = String(latestShow.id || '').trim()
+      artistId = String(latestShow.artist_id || '').trim()
       console.log('Public view triggered: showing latest show', showId)
     } else {
       // No shows in DB, show mock/welcome instead
@@ -92,8 +92,8 @@ export default async function PortalPage({
 
     if (byPortalToken) {
       const candidateShowId = byPortalToken.id || byPortalToken.show_id
-      showId = candidateShowId || ''
-      artistId = byPortalToken.artist_id || ''
+      showId = String(candidateShowId || '').trim()
+      artistId = String(byPortalToken.artist_id || '').trim()
       showRecord = byPortalToken
     }
 
@@ -109,8 +109,8 @@ export default async function PortalPage({
 
         if (byId) {
           const candidateShowId = byId.id || byId.show_id
-          showId = candidateShowId || ''
-          artistId = byId.artist_id || ''
+          showId = String(candidateShowId || '').trim()
+          artistId = String(byId.artist_id || '').trim()
           showRecord = byId
         }
       }
@@ -126,24 +126,50 @@ export default async function PortalPage({
 
       if (byShowId) {
         const candidateShowId = byShowId.id || byShowId.show_id
-        showId = candidateShowId || ''
-        artistId = byShowId.artist_id || ''
+        showId = String(candidateShowId || '').trim()
+        artistId = String(byShowId.artist_id || '').trim()
         showRecord = byShowId
       }
     }
 
     // Layer D: Check materials.portal_token
     if (!showId) {
-      const { data: materialLink } = await supabase!
+      const { data: materialLinks } = await supabase!
         .from('materials')
         .select('show_id, artist_id')
         .eq('portal_token', cleanToken)
-        .limit(1)
-        .maybeSingle()
+        .limit(50)
 
-      if (materialLink) {
-        showId = materialLink.show_id
-        artistId = materialLink.artist_id
+      if (materialLinks?.length) {
+        const showCandidates = Array.from(new Set(materialLinks.map((m) => String(m.show_id || '').trim()).filter(Boolean)))
+        let selectedShowId = ''
+        let selectedArtistId = ''
+
+        if (showCandidates.length) {
+          const { data: matchedShows } = await supabase!
+            .from('shows')
+            .select('*')
+            .in('id', showCandidates)
+
+          if (matchedShows?.length) {
+            const matchedIds = new Set(matchedShows.map((s) => String(s.id || '').trim()))
+            const firstValid = materialLinks.find((m) => matchedIds.has(String(m.show_id || '').trim()))
+
+            if (firstValid) {
+              selectedShowId = String(firstValid.show_id || '').trim()
+              selectedArtistId = String(firstValid.artist_id || '').trim()
+            }
+          }
+        }
+
+        // Fallback to first match if we could not verify a linked show row.
+        if (!selectedShowId) {
+          selectedShowId = String(materialLinks[0].show_id || '').trim()
+          selectedArtistId = String(materialLinks[0].artist_id || '').trim()
+        }
+
+        showId = selectedShowId
+        artistId = selectedArtistId
       }
     }
   }
@@ -203,7 +229,16 @@ export default async function PortalPage({
   }
 
   // Graceful Fallbacks for missing relational data
-  const safeArtist = artistData || { name: 'Artist TBA' }
+  const normalizedShow = show
+    ? {
+        ...show,
+        venue_name: show.venue_name || show.venue || 'Venue TBA',
+        promoter_name: show.promoter_name || 'Promoter Team',
+        promoter_email: show.promoter_email || show.artist_email || '',
+      }
+    : show
+
+  const safeArtist = artistData || { name: show?.artist_name || 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
@@ -212,7 +247,7 @@ export default async function PortalPage({
 
   return (
     <PortalClient
-      show={show}
+      show={normalizedShow}
       artist={safeArtist}
       materials={safeMaterials}
       token={uiToken}
