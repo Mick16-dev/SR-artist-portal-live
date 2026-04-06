@@ -5,8 +5,9 @@ import { Welcome } from '@/components/Welcome'
 
 // Server-side Supabase client for SSR
 function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
   return createClient(url, key)
 }
 
@@ -22,8 +23,21 @@ export default async function PortalPage({
   let showId = ''
   let artistId = ''
 
+  if (!supabase && preview !== 'true') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 p-10 text-center">
+        <div className="max-w-md space-y-4">
+          <p className="text-red-400 font-bold uppercase tracking-widest text-sm border border-red-500/30 bg-red-500/10 p-4 rounded-xl">
+            System Offline: Missing Production Environment Variables.
+          </p>
+          <p className="text-slate-400 text-xs">Please configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY inside Vercel or locally.</p>
+        </div>
+      </div>
+    )
+  }
+
   // 1. Check if token or preview is present
-  if (!cleanToken && preview !== 'true') {
+  if (!cleanToken && preview !== 'true' && supabase) {
     // PUBLIC FALLBACK: If no token provided, try to fetch the most recent show as a "public" preview
     const { data: latestShow } = await supabase
       .from('shows')

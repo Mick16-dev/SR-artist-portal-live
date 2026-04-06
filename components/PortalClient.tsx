@@ -193,12 +193,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               </div>
               <div className="h-4 w-px bg-slate-100" />
               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
-                 PS_PROMOTION_ENCRYPTION_ENABLED: {show.show_date.replace(/-/g, '')}
+                 PS_PROMOTION_ENCRYPTION_ENABLED: {show?.show_date?.replace(/-/g, '') || '00000000'}
               </div>
            </motion.div>
            
            <h1 className="text-7xl lg:text-[10rem] font-black leading-[0.85] tracking-tighter uppercase italic text-slate-900">
-              {artist.name.toUpperCase()}
+              {artist?.name?.toUpperCase() || 'ARTIST TBA'}
            </h1>
            
            <div className="grid lg:grid-cols-2 gap-16 items-start pt-6">
@@ -207,7 +207,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     Welcome to your <span className="text-slate-950">Active Production Hub.</span>
                  </p>
                  <p className="text-lg lg:text-xl text-slate-500 font-bold leading-relaxed max-w-lg italic">
-                    Every file submitted here is encrypted and transmitted directly to the production team at <span className="text-slate-900 underline decoration-indigo-200 decoration-8 underline-offset-4">{show.venue_name}</span>.
+                    Every file submitted here is encrypted and transmitted directly to the production team at <span className="text-slate-900 underline decoration-indigo-200 decoration-8 underline-offset-4">{show?.venue_name || 'the venue'}</span>.
                  </p>
               </div>
               
@@ -258,15 +258,15 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Verified Stage</span>
                              </div>
-                             <p className="text-3xl font-black text-white italic tracking-tighter leading-none">{show.venue_name}</p>
-                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">{show.city}</p>
+                             <p className="text-3xl font-black text-white italic tracking-tighter leading-none">{show?.venue_name || 'Venue TBA'}</p>
+                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">{show?.city || 'City TBA'}</p>
                           </div>
                       </div>
                       
                       <div className="bg-slate-50 p-8 rounded-[2.5rem] space-y-1 border border-slate-100">
                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Show Date</p>
                          <p className="text-xl font-black tracking-tight text-slate-900 italic">
-                            {format(new Date(show.show_date), 'MMMM do, yyyy')}
+                            {show?.show_date ? format(new Date(show.show_date), 'MMMM do, yyyy') : 'Date TBA'}
                          </p>
                       </div>
                     </div>
@@ -280,7 +280,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     >
                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700 group-hover:text-white transition-colors">Immediate Support</p>
                        <div>
-                          <p className="text-sm font-black text-slate-950 group-hover:text-white leading-none mb-1 transition-colors">{show.promoter_name}</p>
+                          <p className="text-sm font-black text-slate-950 group-hover:text-white leading-none mb-1 transition-colors">{show?.promoter_name || 'Promoter Team'}</p>
                           <p className="text-xs font-bold text-slate-400 group-hover:text-white/60 transition-colors">Promoter & Production Manager</p>
                        </div>
                     </a>
