@@ -16,14 +16,16 @@ function getSupabase() {
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string, preview?: string }>
+  searchParams: Promise<{ token?: string, portal_token?: string, show_token?: string, t?: string, preview?: string }>
 }) {
-  const { token, preview } = await searchParams
-  const cleanToken = token?.trim()
+  const { token, portal_token, show_token, t, preview } = await searchParams
+  const rawToken = token ?? portal_token ?? show_token ?? t
+  const cleanToken = rawToken ? decodeURIComponent(rawToken).trim().replace(/^["']|["']$/g, '') : undefined
   const supabase = getSupabase()
 
   let showId = ''
   let artistId = ''
+  let showRecord: Record<string, any> | null = null
 
   if (!supabase && preview !== 'true') {
     return (
@@ -84,13 +86,15 @@ export default async function PortalPage({
     // Layer A: Check shows.portal_token (primary path)
     const { data: byPortalToken } = await supabase!
       .from('shows')
-      .select('id, show_id, artist_id')
+      .select('*')
       .eq('portal_token', cleanToken)
       .maybeSingle()
 
     if (byPortalToken) {
-      showId = byPortalToken.id || byPortalToken.show_id
-      artistId = byPortalToken.artist_id
+      const candidateShowId = byPortalToken.id || byPortalToken.show_id
+      showId = candidateShowId || ''
+      artistId = byPortalToken.artist_id || ''
+      showRecord = byPortalToken
     }
 
     // Layer B: Check shows.id directly (valid UUID format)
@@ -99,13 +103,15 @@ export default async function PortalPage({
       if (isUuid) {
         const { data: byId } = await supabase!
           .from('shows')
-          .select('id, show_id, artist_id')
+          .select('*')
           .eq('id', cleanToken)
           .maybeSingle()
 
         if (byId) {
-          showId = byId.id || byId.show_id
-          artistId = byId.artist_id
+          const candidateShowId = byId.id || byId.show_id
+          showId = candidateShowId || ''
+          artistId = byId.artist_id || ''
+          showRecord = byId
         }
       }
     }
@@ -114,13 +120,15 @@ export default async function PortalPage({
     if (!showId) {
       const { data: byShowId } = await supabase!
         .from('shows')
-        .select('id, show_id, artist_id')
+        .select('*')
         .eq('show_id', cleanToken)
         .maybeSingle()
 
       if (byShowId) {
-        showId = byShowId.id || byShowId.show_id
-        artistId = byShowId.artist_id
+        const candidateShowId = byShowId.id || byShowId.show_id
+        showId = candidateShowId || ''
+        artistId = byShowId.artist_id || ''
+        showRecord = byShowId
       }
     }
 
@@ -147,16 +155,24 @@ export default async function PortalPage({
 
   // 5. Success Flow - Fetch all data
   // Try both id and show_id column to cover different Supabase schema setups
-  const [materialsById, materialsByShowId, showById, showByShowId, artist] = await Promise.all([
-    supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
-    supabase!.from('materials').select('*').eq('show_id', cleanToken).order('deadline', { ascending: true }),
-    supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
-    supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
-    supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
+  const [showById, showByShowId] = await Promise.all([
+    showRecord ? Promise.resolve({ data: showRecord }) : supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
+    showRecord ? Promise.resolve({ data: null }) : supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
   ])
 
-  const show = showById.data || showByShowId.data
-  const materials = (materialsById.data?.length ? materialsById.data : materialsByShowId.data) || []
+  const show = showRecord || showById.data || showByShowId.data
+
+  const materialShowKeys = [
+    showId,
+    typeof show?.show_id === 'string' ? show.show_id : '',
+  ].filter(Boolean) as string[]
+
+  const { data: materialsData } = materialShowKeys.length
+    ? await supabase!.from('materials').select('*').in('show_id', materialShowKeys).order('deadline', { ascending: true })
+    : await supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true })
+
+  const { data: artistData } = await supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
+  const materials = materialsData || []
 
   // Safety check
   if (!show) {
@@ -177,7 +193,7 @@ export default async function PortalPage({
   }
 
   // Graceful Fallbacks for missing relational data
-  const safeArtist = artist.data || { name: 'Artist TBA' }
+  const safeArtist = artistData || { name: 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
