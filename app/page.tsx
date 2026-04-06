@@ -24,7 +24,6 @@ export default async function PortalPage({
   const supabase = getSupabase()
 
   let showId = ''
-  let artistId = ''
   let showRecord: Record<string, any> | null = null
 
   if (!supabase && preview !== 'true') {
@@ -52,7 +51,6 @@ export default async function PortalPage({
 
     if (latestShow) {
       showId = String(latestShow.id || '').trim()
-      artistId = String(latestShow.artist_id || '').trim()
       console.log('Public view triggered: showing latest show', showId)
     } else {
       // No shows in DB, show mock/welcome instead
@@ -76,28 +74,36 @@ export default async function PortalPage({
      ]
      return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
-    // MULTI-LAYER TOKEN LOOKUP
-    // The URL token might be:
-    // A) The short showPortalToken stored in shows.portal_token (standard)
-    // B) A UUID stored in shows.id (raw show UUID fallback)
-    // C) A UUID n8n generated stored in shows.show_id (n8n-generated field)
-    // D) The portal_token on a material row
-
-    // Layer A: Check shows.portal_token (primary path)
-    const { data: byPortalToken } = await supabase!
-      .from('shows')
+    // Token resolution that matches your schema:
+    // materials.portal_token -> materials.show_id -> shows.id
+    const { data: materialLinks } = await supabase!
+      .from('materials')
       .select('*')
       .eq('portal_token', cleanToken)
-      .maybeSingle()
+      .limit(50)
 
-    if (byPortalToken) {
-      const candidateShowId = byPortalToken.id || byPortalToken.show_id
-      showId = String(candidateShowId || '').trim()
-      artistId = String(byPortalToken.artist_id || '').trim()
-      showRecord = byPortalToken
+    if (materialLinks?.length) {
+      const showCandidates = Array.from(new Set(materialLinks.map((m) => String(m.show_id || '').trim()).filter(Boolean)))
+
+      if (showCandidates.length) {
+        const { data: matchedShows } = await supabase!
+          .from('shows')
+          .select('*')
+          .in('id', showCandidates)
+
+        if (matchedShows?.length) {
+          const matchedIds = new Set(matchedShows.map((s) => String(s.id || '').trim()))
+          const firstValid = materialLinks.find((m) => matchedIds.has(String(m.show_id || '').trim()))
+
+          if (firstValid) {
+            showId = String(firstValid.show_id || '').trim()
+            showRecord = matchedShows.find((s) => String(s.id || '').trim() === showId) || null
+          }
+        }
+      }
     }
 
-    // Layer B: Check shows.id directly (valid UUID format)
+    // Fallback: token itself is directly a shows.id
     if (!showId) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
       if (isUuid) {
@@ -108,68 +114,9 @@ export default async function PortalPage({
           .maybeSingle()
 
         if (byId) {
-          const candidateShowId = byId.id || byId.show_id
-          showId = String(candidateShowId || '').trim()
-          artistId = String(byId.artist_id || '').trim()
+          showId = String(byId.id || '').trim()
           showRecord = byId
         }
-      }
-    }
-
-    // Layer C: Check shows.show_id (n8n workflows often store Dashboard show_id here)
-    if (!showId) {
-      const { data: byShowId } = await supabase!
-        .from('shows')
-        .select('*')
-        .eq('show_id', cleanToken)
-        .maybeSingle()
-
-      if (byShowId) {
-        const candidateShowId = byShowId.id || byShowId.show_id
-        showId = String(candidateShowId || '').trim()
-        artistId = String(byShowId.artist_id || '').trim()
-        showRecord = byShowId
-      }
-    }
-
-    // Layer D: Check materials.portal_token
-    if (!showId) {
-      const { data: materialLinks } = await supabase!
-        .from('materials')
-        .select('show_id, artist_id')
-        .eq('portal_token', cleanToken)
-        .limit(50)
-
-      if (materialLinks?.length) {
-        const showCandidates = Array.from(new Set(materialLinks.map((m) => String(m.show_id || '').trim()).filter(Boolean)))
-        let selectedShowId = ''
-        let selectedArtistId = ''
-
-        if (showCandidates.length) {
-          const { data: matchedShows } = await supabase!
-            .from('shows')
-            .select('*')
-            .in('id', showCandidates)
-
-          if (matchedShows?.length) {
-            const matchedIds = new Set(matchedShows.map((s) => String(s.id || '').trim()))
-            const firstValid = materialLinks.find((m) => matchedIds.has(String(m.show_id || '').trim()))
-
-            if (firstValid) {
-              selectedShowId = String(firstValid.show_id || '').trim()
-              selectedArtistId = String(firstValid.artist_id || '').trim()
-            }
-          }
-        }
-
-        // Fallback to first match if we could not verify a linked show row.
-        if (!selectedShowId) {
-          selectedShowId = String(materialLinks[0].show_id || '').trim()
-          selectedArtistId = String(materialLinks[0].artist_id || '').trim()
-        }
-
-        showId = selectedShowId
-        artistId = selectedArtistId
       }
     }
   }
@@ -180,38 +127,42 @@ export default async function PortalPage({
   }
 
   // 5. Success Flow - Fetch all data
-  // Try both id and show_id column to cover different Supabase schema setups
   const isResolvedShowIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId || '')
-  const [showById, showByShowId, showByPortalToken] = await Promise.all([
+  const [showById] = await Promise.all([
     showRecord
       ? Promise.resolve({ data: showRecord, error: null })
       : isResolvedShowIdUuid
         ? supabase!.from('shows').select('*').eq('id', showId).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
-    showRecord
-      ? Promise.resolve({ data: null, error: null })
-      : supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
-    showRecord || !cleanToken
-      ? Promise.resolve({ data: null, error: null })
-      : supabase!.from('shows').select('*').eq('portal_token', cleanToken).maybeSingle(),
   ])
 
-  const show = showRecord || showById.data || showByShowId.data || showByPortalToken.data
+  const show = showRecord || showById.data
 
   const materialShowKeys = [
     showId,
-    typeof show?.show_id === 'string' ? show.show_id : '',
   ].filter(Boolean) as string[]
 
   const { data: materialsData } = materialShowKeys.length
     ? await supabase!.from('materials').select('*').in('show_id', materialShowKeys).order('deadline', { ascending: true })
     : await supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true })
 
-  const { data: artistData } = await supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
-  const materials = materialsData || []
+  let materials = materialsData || []
+
+  // Emergency fallback: if show relation is broken, still recover materials by token and render portal.
+  if (!show && cleanToken) {
+    const { data: materialsByToken } = await supabase!
+      .from('materials')
+      .select('*')
+      .eq('portal_token', cleanToken)
+      .order('deadline', { ascending: true })
+
+    if (materialsByToken?.length) {
+      materials = materialsByToken
+    }
+  }
 
   // Safety check
-  if (!show) {
+  if (!show && materials.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-6">
         <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">
@@ -222,7 +173,7 @@ export default async function PortalPage({
            <p className="text-red-600 font-bold uppercase">Debug Info:</p>
            <p className="text-slate-600">showId resolved to: <strong>{showId}</strong></p>
            <p className="text-slate-600">Token received: <strong>{cleanToken}</strong></p>
-           <p className="text-slate-500 mt-2">The show row could not be fetched. Check Supabase → shows table for this ID and verify the correct column name (id vs show_id).</p>
+           <p className="text-slate-500 mt-2">No show row matched this material link. Verify <strong>materials.show_id</strong> points to an existing <strong>shows.id</strong>, and that the token exists in <strong>materials.portal_token</strong>.</p>
         </div>
       </div>
     )
@@ -236,9 +187,16 @@ export default async function PortalPage({
         promoter_name: show.promoter_name || 'Promoter Team',
         promoter_email: show.promoter_email || show.artist_email || '',
       }
-    : show
+    : {
+        venue_name: 'Show Details Pending Sync',
+        city: 'TBA',
+        show_date: '',
+        show_time: 'TBA',
+        promoter_name: 'Promoter Team',
+        promoter_email: '',
+      }
 
-  const safeArtist = artistData || { name: show?.artist_name || 'Artist TBA' }
+  const safeArtist = { name: show?.artist_name || 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
