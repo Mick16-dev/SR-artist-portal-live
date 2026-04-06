@@ -13,6 +13,10 @@ function getSupabase() {
   return createClient(url, key)
 }
 
+function normalizeKey(value: unknown) {
+  return String(value || '').trim().replace(/^["']|["']$/g, '')
+}
+
 export default async function PortalPage({
   searchParams,
 }: {
@@ -20,7 +24,7 @@ export default async function PortalPage({
 }) {
   const { token, portal_token, show_token, t, preview } = await searchParams
   const rawToken = token ?? portal_token ?? show_token ?? t
-  const cleanToken = rawToken ? decodeURIComponent(rawToken).trim().replace(/^["']|["']$/g, '') : undefined
+  const cleanToken = rawToken ? normalizeKey(decodeURIComponent(rawToken)) : undefined
   const supabase = getSupabase()
 
   let showId = ''
@@ -50,7 +54,7 @@ export default async function PortalPage({
       .maybeSingle()
 
     if (latestShow) {
-      showId = String(latestShow.id || '').trim()
+      showId = normalizeKey(latestShow.id)
       console.log('Public view triggered: showing latest show', showId)
     } else {
       // No shows in DB, show mock/welcome instead
@@ -83,7 +87,7 @@ export default async function PortalPage({
       .limit(50)
 
     if (materialLinks?.length) {
-      const showCandidates = Array.from(new Set(materialLinks.map((m) => String(m.show_id || '').trim()).filter(Boolean)))
+      const showCandidates = Array.from(new Set(materialLinks.map((m) => normalizeKey(m.show_id)).filter(Boolean)))
 
       if (showCandidates.length) {
         const { data: matchedShows } = await supabase!
@@ -92,12 +96,12 @@ export default async function PortalPage({
           .in('id', showCandidates)
 
         if (matchedShows?.length) {
-          const matchedIds = new Set(matchedShows.map((s) => String(s.id || '').trim()))
-          const firstValid = materialLinks.find((m) => matchedIds.has(String(m.show_id || '').trim()))
+          const matchedIds = new Set(matchedShows.map((s) => normalizeKey(s.id)))
+          const firstValid = materialLinks.find((m) => matchedIds.has(normalizeKey(m.show_id)))
 
           if (firstValid) {
-            showId = String(firstValid.show_id || '').trim()
-            showRecord = matchedShows.find((s) => String(s.id || '').trim() === showId) || null
+            showId = normalizeKey(firstValid.show_id)
+            showRecord = matchedShows.find((s) => normalizeKey(s.id) === showId) || null
           }
         }
       }
@@ -114,7 +118,7 @@ export default async function PortalPage({
           .maybeSingle()
 
         if (byId) {
-          showId = String(byId.id || '').trim()
+          showId = normalizeKey(byId.id)
           showRecord = byId
         }
       }
@@ -159,8 +163,8 @@ export default async function PortalPage({
 
     if (materialsByToken?.length) {
       const merged = new Map<string, any>()
-      for (const row of materials) merged.set(String(row.id), row)
-      for (const row of materialsByToken) merged.set(String(row.id), row)
+      for (const row of materials) merged.set(normalizeKey(row.id), row)
+      for (const row of materialsByToken) merged.set(normalizeKey(row.id), row)
       materials = Array.from(merged.values())
     }
   }
