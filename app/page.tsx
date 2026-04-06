@@ -93,7 +93,21 @@ export default async function PortalPage({
       }
     }
 
-    // Token resolution that matches your schema:
+    // Priority 2: support show-level token links if `shows.portal_token` exists.
+    if (!showId && cleanToken) {
+      const showByPortalToken = await supabase!
+        .from('shows')
+        .select('*')
+        .eq('portal_token', cleanToken)
+        .maybeSingle()
+
+      if (!showByPortalToken.error && showByPortalToken.data) {
+        showId = normalizeKey(showByPortalToken.data.id)
+        showRecord = showByPortalToken.data
+      }
+    }
+
+    // Priority 3: materials-level token links.
     // materials.portal_token -> materials.show_id -> shows.id
     const { data: materialLinks } = cleanToken
       ? await supabase!
@@ -150,6 +164,20 @@ export default async function PortalPage({
         }
       }
     }
+
+    // Priority 4: token may actually be the show_id itself.
+    if (!showId && cleanToken) {
+      const { data: materialsByShowId } = await supabase!
+        .from('materials')
+        .select('*')
+        .eq('show_id', cleanToken)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (materialsByShowId?.length) {
+        showId = normalizeKey(cleanToken)
+      }
+    }
   }
 
   // 4. Continue even without showId so token-based material fallback can still recover access.
@@ -201,6 +229,19 @@ export default async function PortalPage({
     }
   }
 
+  // Final consistency pass: if we now know a show_id, always fetch the full required docs for that show.
+  if (showId) {
+    const { data: fullShowMaterials } = await supabase!
+      .from('materials')
+      .select('*')
+      .eq('show_id', showId)
+      .order('deadline', { ascending: true })
+
+    if (fullShowMaterials?.length) {
+      materials = fullShowMaterials
+    }
+  }
+
   // Safety check
   if (!show && materials.length === 0) {
     return <InvalidToken receivedToken={cleanToken || 'none'} />
@@ -223,7 +264,8 @@ export default async function PortalPage({
         promoter_email: '',
       }
 
-  const safeArtist = { name: show?.artist_name || 'Artist TBA' }
+  const materialArtistName = materials.find((m) => typeof m.artist_name === 'string' && m.artist_name.trim())?.artist_name
+  const safeArtist = { name: show?.artist_name || materialArtistName || 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
