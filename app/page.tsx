@@ -125,24 +125,23 @@ export default async function PortalPage({
         : materialLinks
 
       const linksToUse = filteredLinks.length ? filteredLinks : materialLinks
-      // Group by show_id and pick the newest linked show first.
-      const sortedShowCandidates = Array.from(
+      const showCandidates = Array.from(
         new Set(linksToUse.map((m) => normalizeKey(m.show_id)).filter(Boolean))
       )
 
-      if (sortedShowCandidates.length) {
+      if (showCandidates.length) {
         const { data: matchedShows } = await supabase!
           .from('shows')
           .select('*')
-          .in('id', sortedShowCandidates)
+          .in('id', showCandidates)
+          .order('created_at', { ascending: false })
 
         if (matchedShows?.length) {
-          const matchedIds = new Set(matchedShows.map((s) => normalizeKey(s.id)))
-          const firstValid = linksToUse.find((m) => matchedIds.has(normalizeKey(m.show_id)))
-
-          if (firstValid) {
-            showId = normalizeKey(firstValid.show_id)
-            showRecord = matchedShows.find((s) => normalizeKey(s.id) === showId) || null
+          // Deterministic choice: newest show row wins when one token maps to multiple shows.
+          const preferredShow = matchedShows[0]
+          if (preferredShow) {
+            showId = normalizeKey(preferredShow.id)
+            showRecord = preferredShow
           }
         }
       }
