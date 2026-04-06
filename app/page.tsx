@@ -138,11 +138,16 @@ export default async function PortalPage({
     showId,
   ].filter(Boolean) as string[]
 
-  const { data: materialsData } = materialShowKeys.length
-    ? await supabase!.from('materials').select('*').in('show_id', materialShowKeys).order('deadline', { ascending: true })
-    : Promise.resolve({ data: [] as any[] })
+  let materials: any[] = []
+  if (materialShowKeys.length) {
+    const { data: materialsData } = await supabase!
+      .from('materials')
+      .select('*')
+      .in('show_id', materialShowKeys)
+      .order('deadline', { ascending: true })
 
-  let materials = materialsData || []
+    materials = materialsData || []
+  }
 
   // Emergency fallback: if show relation is broken, still recover materials by token and render portal.
   if (!show && cleanToken) {
