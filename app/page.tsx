@@ -84,12 +84,12 @@ export default async function PortalPage({
     // Layer A: Check shows.portal_token (primary path)
     const { data: byPortalToken } = await supabase!
       .from('shows')
-      .select('id, artist_id')
+      .select('id, show_id, artist_id')
       .eq('portal_token', cleanToken)
       .maybeSingle()
 
     if (byPortalToken) {
-      showId = byPortalToken.id
+      showId = byPortalToken.id || byPortalToken.show_id
       artistId = byPortalToken.artist_id
     }
 
@@ -99,27 +99,27 @@ export default async function PortalPage({
       if (isUuid) {
         const { data: byId } = await supabase!
           .from('shows')
-          .select('id, artist_id')
+          .select('id, show_id, artist_id')
           .eq('id', cleanToken)
           .maybeSingle()
 
         if (byId) {
-          showId = byId.id
+          showId = byId.id || byId.show_id
           artistId = byId.artist_id
         }
       }
     }
 
-    // Layer C: Check shows.show_id (some n8n workflows store show ID here)
+    // Layer C: Check shows.show_id (n8n workflows often store Dashboard show_id here)
     if (!showId) {
       const { data: byShowId } = await supabase!
         .from('shows')
-        .select('id, artist_id')
+        .select('id, show_id, artist_id')
         .eq('show_id', cleanToken)
         .maybeSingle()
 
       if (byShowId) {
-        showId = byShowId.id
+        showId = byShowId.id || byShowId.show_id
         artistId = byShowId.artist_id
       }
     }
@@ -145,31 +145,39 @@ export default async function PortalPage({
     return <InvalidToken receivedToken={cleanToken || 'none'} />
   }
 
-  // 5. Success Flow - Fetch all materials, show, and artist
-  const [{ data: materials }, { data: show }, { data: artist }] = await Promise.all([
+  // 5. Success Flow - Fetch all data
+  // Try both id and show_id column to cover different Supabase schema setups
+  const [materialsById, materialsByShowId, showById, showByShowId, artist] = await Promise.all([
     supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
+    supabase!.from('materials').select('*').eq('show_id', cleanToken).order('deadline', { ascending: true }),
     supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
+    supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
     supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
   ])
 
-  // Safety check for critical data - heavily relaxed to allow partial database matching
+  const show = showById.data || showByShowId.data
+  const materials = (materialsById.data?.length ? materialsById.data : materialsByShowId.data) || []
+
+  // Safety check
   if (!show) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-6">
         <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">
-           <span className="text-sm font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-red-500 block mb-2">PS-promotion</span>
+           <span className="text-sm font-black text-slate-900 tracking-tighter italic uppercase block mb-2">PS-promotion</span>
           Data Conflict
         </p>
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-xs text-left font-mono space-y-2 w-full max-w-md">
-           <p className="text-red-600 font-bold uppercase">Critical Failure:</p>
-           <p className="text-slate-600">The core Show database row could not be found. Please ensure this show was successfully created in the Promoter Dashboard.</p>
+           <p className="text-red-600 font-bold uppercase">Debug Info:</p>
+           <p className="text-slate-600">showId resolved to: <strong>{showId}</strong></p>
+           <p className="text-slate-600">Token received: <strong>{cleanToken}</strong></p>
+           <p className="text-slate-500 mt-2">The show row could not be fetched. Check Supabase → shows table for this ID and verify the correct column name (id vs show_id).</p>
         </div>
       </div>
     )
   }
 
   // Graceful Fallbacks for missing relational data
-  const safeArtist = artist || { name: 'Artist TBA' }
+  const safeArtist = artist.data || { name: 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
