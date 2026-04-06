@@ -24,6 +24,7 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -76,9 +77,13 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
     fd.append('file', file)
 
     try {
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       const res = await fetch(process.env.NEXT_PUBLIC_N8N_UPLOAD_WEBHOOK || process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK || '', {
         method: 'POST',
-        body: fd
+        body: fd,
+        signal: controller.signal,
       })
 
       if (!res.ok) throw new Error()
@@ -88,12 +93,23 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
       // Auto-refresh handled by parent component's Supabase real-time sync
       // BUT we also manually trigger parent onUpload if we want
       await onUpload(material.portal_token, file, displayName)
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.info(`Upload cancelled for ${displayName}.`, { id: toastId })
+      } else {
        toast.error(`Failed to upload ${displayName}. Please try again.`, { id: toastId })
+      }
     } finally {
+       abortControllerRef.current = null
        setIsUploading(false)
        setSelectedFileName(null)
        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const cancelUpload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
     }
   }
 
@@ -126,14 +142,22 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
 
         <div>
           {isSubmitted ? (
-            <a
-              href={material.file_url || '#'}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
-            >
-              View submitted file
-            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={material.file_url || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                View submitted file
+              </a>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Upload new version
+              </button>
+            </div>
           ) : (
             <div className="space-y-3">
               <button
@@ -145,6 +169,14 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
               >
                 {isUploading ? (selectedFileName ? `Uploading ${selectedFileName}...` : 'Uploading...') : `Upload ${displayName}`}
               </button>
+              {isUploading && (
+                <button
+                  onClick={cancelUpload}
+                  className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                >
+                  Cancel upload
+                </button>
+              )}
               <p className="text-xs text-slate-500">Accepted: PDF, DOC, DOCX • Max size: 10MB</p>
             </div>
           )}

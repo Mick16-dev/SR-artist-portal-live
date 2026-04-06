@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import confetti from 'canvas-confetti'
-import { format } from 'date-fns'
+import { differenceInDays, format, isPast, isToday } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
 
@@ -51,6 +51,7 @@ interface PortalClientProps {
 }
 
 export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   // Standard 5-Document Production Blueprint
   const productionBlueprint = [
@@ -72,6 +73,19 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     portal_token: `preview-${i}`,
     file_url: '#'
   })) as Material[] : initialMaterials
+
+  useEffect(() => {
+    const storedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('artist-portal-theme') : null
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      setTheme(storedTheme)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('artist-portal-theme', theme)
+    }
+  }, [theme])
 
   // Real-Time Production Sync
   useEffect(() => {
@@ -118,6 +132,17 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
+  const pendingMaterials = materialsToRender.filter((m) => m.status !== 'submitted')
+  const dueTodayCount = pendingMaterials.filter((m) => isToday(new Date(m.deadline))).length
+  const overdueCount = pendingMaterials.filter((m) => !isToday(new Date(m.deadline)) && isPast(new Date(m.deadline))).length
+  const nextDeadlineMaterial = pendingMaterials
+    .slice()
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())[0]
+  const nextDeadlineLabel = nextDeadlineMaterial
+    ? isToday(new Date(nextDeadlineMaterial.deadline))
+      ? 'Today'
+      : `${Math.max(0, differenceInDays(new Date(nextDeadlineMaterial.deadline), new Date()))} day(s)`
+    : 'Completed'
 
   useEffect(() => {
     if (isComplete) {
@@ -153,52 +178,77 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     }
   }
 
+  const isDark = theme === 'dark'
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans antialiased">
+    <div className={`${isDark ? 'dark' : ''}`}>
+    <div className="min-h-screen bg-slate-50 font-sans antialiased dark:bg-slate-950">
       <Toaster position="top-center" richColors />
 
-      <nav className="border-b border-slate-200 bg-white">
+      <nav className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
             <div className="flex items-center gap-3">
-               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-slate-700">
                   <Icons.Logo />
                </div>
                <div>
-                  <p className="text-xs font-medium text-slate-500">PS-promotion</p>
-                  <p className="text-sm font-semibold text-slate-900">Artist Portal</p>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">PS-promotion</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Artist Portal</p>
                </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-500">Venue</p>
-              <p className="text-sm font-medium text-slate-900">{show?.venue_name || 'TBA'}</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                {isDark ? 'Light mode' : 'Dark mode'}
+              </button>
+              <div className="text-right">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Venue</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{show?.venue_name || 'TBA'}</p>
+              </div>
             </div>
          </div>
       </nav>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         
-        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
            <div className="mb-6 flex items-center justify-between">
              <div>
-               <p className="text-sm text-slate-500">Welcome</p>
-               <h1 className="text-3xl font-semibold text-slate-900">{artist?.name || 'Artist TBA'}</h1>
+               <p className="text-sm text-slate-500 dark:text-slate-400">Welcome</p>
+               <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{artist?.name || 'Artist TBA'}</h1>
              </div>
              <div className="text-right">
-               <p className="text-sm text-slate-500">Submission progress</p>
-               <p className="text-xl font-semibold text-slate-900">{submittedCount}/{totalCount}</p>
+               <p className="text-sm text-slate-500 dark:text-slate-400">Submission progress</p>
+               <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{submittedCount}/{totalCount}</p>
              </div>
            </div>
-           <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-2 text-sm text-slate-600">
+           <div className="grid gap-6 lg:grid-cols-3">
+              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                 <p>Upload the required documents listed below.</p>
-                <p>Items and due dates are synced from Supabase and update automatically.</p>
+                <p>Track deadlines in real time and submit files directly to production.</p>
               </div>
-              <div className="rounded-xl bg-slate-50 p-5">
+              <div className="rounded-xl bg-slate-50 p-5 dark:bg-slate-800/70">
                  <ProgressBar total={totalCount} submittedCount={submittedCount} />
-                 <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs text-slate-500">
+                 <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
                     <span>Live sync enabled</span>
                     <span>{show?.show_date ? format(new Date(show.show_date), 'MMM d, yyyy') : 'Date TBA'}</span>
                  </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Due today</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{dueTodayCount}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Overdue</p>
+                  <p className="text-lg font-semibold text-rose-600">{overdueCount}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Next deadline</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{nextDeadlineLabel}</p>
+                </div>
               </div>
            </div>
         </section>
@@ -209,18 +259,18 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
            {/* Mandatory Assets Assets */}
           <section className="space-y-6">
              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Required Documents</h2>
-                <p className="text-sm text-slate-500">{totalCount} items</p>
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Required Documents</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{totalCount} items</p>
               </div>
               
               <div className="space-y-6">
                  {materialsToRender.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-                       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+                       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
                           <span className="text-2xl">🔒</span>
                        </div>
-                       <p className="text-sm font-semibold text-slate-900">No active documents</p>
-                       <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500">
+                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">No active documents</p>
+                       <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                           The promoter has not scheduled any mandatory materials for this specific show in the database yet.
                        </p>
                     </div>
@@ -240,9 +290,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
            <aside className="space-y-6">
               <div className="sticky top-6 space-y-6">
                  
-                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h4 className="mb-4 text-sm font-semibold text-slate-900">Show Details</h4>
-                    <div className="space-y-3 text-sm text-slate-600">
+                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Show Details</h4>
+                    <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
                        <div className="flex items-center gap-3">
                           <span>📍</span>
                           <span>{show?.venue_name || 'Venue TBA'}, {show?.city || 'City TBA'}</span>
@@ -258,16 +308,16 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     </div>
                  </div>
 
-                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h4 className="mb-4 text-sm font-semibold text-slate-900">Support</h4>
+                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Support</h4>
                     <a 
                       href={`mailto:${show.promoter_email}`}
-                      className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100"
+                      className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                     >
-                       <p className="text-xs text-slate-500">Contact promoter</p>
+                       <p className="text-xs text-slate-500 dark:text-slate-400">Contact promoter</p>
                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{show?.promoter_name || 'Promoter Team'}</p>
-                          <p className="text-xs text-slate-500">{show?.promoter_email || 'No email configured'}</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{show?.promoter_name || 'Promoter Team'}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{show?.promoter_email || 'No email configured'}</p>
                        </div>
                     </a>
                  </div>
@@ -278,11 +328,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
       </main>
 
-      <footer className="mt-12 border-t border-slate-200 bg-white py-8">
-         <div className="mx-auto max-w-6xl px-6 text-center text-xs text-slate-500">
+      <footer className="mt-12 border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
+         <div className="mx-auto max-w-6xl px-6 text-center text-xs text-slate-500 dark:text-slate-400">
             PS-promotion Artist Portal
          </div>
       </footer>
+    </div>
     </div>
   )
 }

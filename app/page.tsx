@@ -149,8 +149,8 @@ export default async function PortalPage({
     materials = materialsData || []
   }
 
-  // Emergency fallback: if show relation is broken, still recover materials by token and render portal.
-  if (!show && cleanToken) {
+  // Ensure token links always surface assigned document rows even if show_id linkage is inconsistent.
+  if (cleanToken) {
     const { data: materialsByToken } = await supabase!
       .from('materials')
       .select('*')
@@ -158,7 +158,10 @@ export default async function PortalPage({
       .order('deadline', { ascending: true })
 
     if (materialsByToken?.length) {
-      materials = materialsByToken
+      const merged = new Map<string, any>()
+      for (const row of materials) merged.set(String(row.id), row)
+      for (const row of materialsByToken) merged.set(String(row.id), row)
+      materials = Array.from(merged.values())
     }
   }
 
