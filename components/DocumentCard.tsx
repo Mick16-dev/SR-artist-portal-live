@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, isPast, isToday, differenceInDays } from 'date-fns'
+import { toast } from 'sonner'
 
 const Icons = {
   File: () => (
@@ -54,177 +55,149 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ material, onUpload, index }: DocumentCardProps) {
-  const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [abortController, setAbortController] = useState<AbortController | null>(null)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const displayName = material.item_name || material.name || 'Required Document'
   const isSubmitted = material.status === 'submitted'
   const deadlineDate = new Date(material.deadline)
-  const isOverdue = !isSubmitted && isPast(deadlineDate)
+  const isOverdue = !isSubmitted && isPast(deadlineDate) && !isToday(deadlineDate)
+  const daysDiff = Math.abs(differenceInDays(deadlineDate, new Date()))
   const isDeadlineToday = !isSubmitted && isToday(deadlineDate)
-  const daysUntilDeadline = differenceInDays(deadlineDate, new Date())
 
-  // Dynamic status styling based on real-time urgency
-  const getUrgencyLabel = () => {
-    if (isSubmitted) return 'SECURED'
-    if (isOverdue) return 'URGENT: PAST DUE'
-    if (isDeadlineToday) return 'CRITICAL: DUE TODAY'
-    if (daysUntilDeadline <= 3) return `DUE IN ${daysUntilDeadline} DAYS`
-    return 'PENDING TRANSMISSION'
+  // Determine State Formatting
+  let cardClass = ''
+  let statusIcon = ''
+  let statusText = ''
+  
+  if (isSubmitted) {
+    cardClass = 'bg-green-50 border-emerald-500'
+    statusIcon = '✅'
+    const subDate = material.submitted_at ? format(new Date(material.submitted_at), 'MMMM d, yyyy') : 'Recently'
+    statusText = `Submitted — ${subDate}`
+  } else if (isOverdue) {
+    cardClass = 'bg-red-50 border-red-500'
+    statusIcon = '❌'
+    statusText = `${daysDiff} days overdue`
+  } else {
+    cardClass = 'bg-white border-indigo-500'
+    statusIcon = '⏳'
+    statusText = isDeadlineToday ? 'Due today' : `${daysDiff} days remaining`
   }
 
-  const getUrgencyColor = () => {
-    if (isSubmitted) return 'bg-emerald-50 text-emerald-700 ring-emerald-100'
-    if (isOverdue || isDeadlineToday) return 'bg-red-50 text-red-700 ring-red-100 animate-pulse'
-    if (daysUntilDeadline <= 3) return 'bg-amber-50 text-amber-700 ring-amber-100'
-    return 'bg-slate-50 text-slate-500 ring-slate-100'
-  }
-
-  const handleFile = async (file: File) => {
-    const controller = new AbortController()
-    setAbortController(controller)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setSelectedFileName(file.name)
     setIsUploading(true)
     
-    const success = await onUpload(material.portal_token, file, displayName)
+    // Simulate progress visual before complete execution
+    const toastId = toast.loading(`Uploading ${file.name}...`)
     
-    if (success) {
-      // Success is handled by PortalClient's real-time sync
-    }
-    setIsUploading(false)
-    setAbortController(null)
-  }
+    const fd = new FormData()
+    fd.append('token', material.portal_token)
+    fd.append('item_name', displayName)
+    fd.append('file', file)
 
-  const cancelUpload = () => {
-    if (abortController) {
-      abortController.abort()
-      setIsUploading(false)
-      setAbortController(null)
-    }
-  }
+    try {
+      const res = await fetch(process.env.NEXT_PUBLIC_N8N_UPLOAD_WEBHOOK || process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK || '', {
+        method: 'POST',
+        body: fd
+      })
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) handleFile(file)
+      if (!res.ok) throw new Error()
+      
+      toast.success(`✅ ${displayName} submitted successfully!`, { id: toastId })
+      
+      // Auto-refresh handled by parent component's Supabase real-time sync
+      // BUT we also manually trigger parent onUpload if we want
+      await onUpload(material.portal_token, file, displayName)
+    } catch {
+       toast.error(`Failed to upload ${displayName}. Please try again.`, { id: toastId })
+    } finally {
+       setIsUploading(false)
+       setSelectedFileName(null)
+       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
-      onDragEnter={() => setIsDragOver(true)}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={handleDrop}
-      className={`relative group bg-white border border-slate-100 rounded-[2rem] p-10 flex flex-col md:flex-row md:items-center justify-between gap-12 transition-all duration-300 hover:shadow-[0_40px_80px_-10px_rgba(79,70,229,0.12)] ${isDragOver ? 'ring-4 ring-indigo-600 scale-[1.01]' : ''}`}
-    >
-      <div className="flex-1 space-y-6">
-        <div className="flex items-start gap-4">
-           <div className={`p-4 rounded-2xl shrink-0 transition-colors ${isSubmitted ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
-              {displayName.toLowerCase().includes('photo') ? <Icons.Camera /> : <Icons.File />}
-           </div>
-           
-           <div className="space-y-1">
-              <h3 className="text-3xl font-black tracking-tighter italic uppercase text-slate-900 leading-none">
-                 {displayName}
-              </h3>
-              <p className="text-sm font-medium text-slate-400 group-hover:text-slate-500 transition-colors">
-                 {material.description || 'Mandatory technical requirement'}
-              </p>
-           </div>
-        </div>
+    <div className={`p-8 rounded-xl border border-slate-200 border-l-[8px] shadow-sm transform transition-all ${cardClass}`}>
+       <div className="flex flex-col gap-6">
+          <div className="space-y-1">
+             <div className="flex items-center gap-2">
+                <span className="text-xl">📄</span>
+                <h3 className="text-xl font-bold text-slate-800">{displayName}</h3>
+             </div>
+             {material.description && (
+                <p className="text-slate-500 text-sm pl-8">{material.description}</p>
+             )}
+          </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-           <div className={`text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full ring-1 ${getUrgencyColor()}`}>
-              {getUrgencyLabel()}
-           </div>
-           
-           <div className="text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full bg-white text-slate-300 ring-1 ring-slate-100 flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isSubmitted ? 'bg-emerald-400' : 'bg-slate-300'}`} />
-              DUE IN: {format(deadlineDate, 'MMMM do')}
-           </div>
-        </div>
-      </div>
+          <div className="space-y-2 text-sm font-semibold pl-8">
+             <p className="text-slate-700">Due: {format(deadlineDate, 'EEEE, MMMM d yyyy')}</p>
+             <p className={`flex items-center gap-2 ${isOverdue ? 'text-red-600 font-bold' : isSubmitted ? 'text-emerald-700' : 'text-slate-600'}`}>
+                <span>{statusIcon}</span>
+                <span>{statusText}</span>
+             </p>
+             
+             {isOverdue && (
+                <p className="text-red-500 text-xs font-bold pt-1 uppercase tracking-wide">
+                   Please submit this as soon as possible
+                </p>
+             )}
+          </div>
 
-      <div className="shrink-0 flex flex-col items-center gap-4">
-        <AnimatePresence mode="wait">
-          {isUploading ? (
-            <motion.button
-               key="cancel-upload"
-               initial={{ opacity: 0, scale: 0.9 }}
-               animate={{ opacity: 1, scale: 1 }}
-               exit={{ opacity: 0, scale: 0.9 }}
-               onClick={cancelUpload}
-               className="w-full md:w-auto px-8 py-5 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95 min-w-[200px]"
-            >
-               <Icons.X />
-               Cancel Submission
-            </motion.button>
-          ) : isSubmitted ? (
-            <div className="flex flex-col gap-3 w-full md:w-auto">
+          <div className="pt-4 pl-8">
+             {isSubmitted ? (
                <a
-                 href={material.file_url}
+                 href={material.file_url || '#'}
                  target="_blank"
                  rel="noreferrer"
-                 className="px-10 py-5 bg-slate-950 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 min-w-[200px]"
+                 className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
                >
-                  <Icons.Check />
-                  Secure Payload
+                  View Submitted File
                </a>
-               <button
-                 onClick={() => fileInputRef.current?.click()}
-                 className="px-10 py-2 border border-slate-100 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-               >
-                  <Icons.Refresh />
-                  Resubmit Version
-               </button>
-            </div>
-          ) : (
-            <button
-               onClick={() => fileInputRef.current?.click()}
-               className={`w-full md:w-auto px-10 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 min-w-[200px] ${isOverdue || isDeadlineToday ? 'bg-red-600 text-white hover:bg-red-700 shadow-red-100' : 'bg-indigo-600 text-white hover:bg-indigo-800 shadow-indigo-100'}`}
-            >
-               <Icons.Upload />
-               Transmit Asset
-            </button>
-          )}
-        </AnimatePresence>
-        
-        {!isSubmitted && (
-          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] leading-loose">
-             Verified Production Node
-          </p>
-        )}
-      </div>
+             ) : (
+               <div className="space-y-3">
+                  <button
+                     onClick={() => fileInputRef.current?.click()}
+                     disabled={isUploading}
+                     className={`inline-flex items-center justify-center px-6 py-3 rounded-lg font-bold text-sm transition-colors shadow-sm gap-2 ${
+                       isOverdue 
+                       ? 'bg-red-600 text-white hover:bg-red-700' 
+                       : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                     } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                     {isUploading ? (selectedFileName ? `Uploading ${selectedFileName}...` : 'Uploading...') : `Upload ${displayName} ↑`}
+                  </button>
+                  
+                  {isUploading && selectedFileName && (
+                     <div className="w-full max-w-xs h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-500 animate-[shimmer_1.5s_infinite] w-1/2 rounded-full" />
+                     </div>
+                  )}
 
-      <input 
-         type="file" 
-         ref={fileInputRef} 
-         className="hidden" 
-         accept=".pdf,.doc,.docx,.jpg,.png"
-         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
-      
-      {/* Heavy Drag Grid Overlay */}
-      <AnimatePresence>
-         {isDragOver && (
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               className="absolute inset-0 bg-indigo-600 text-white rounded-[2rem] flex flex-col items-center justify-center z-20 border-[8px] border-white/20 backdrop-blur-2xl"
-            >
-               <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                  <Icons.Upload />
+                  {!isUploading && (
+                     <div className="text-xs text-slate-500 space-y-0.5">
+                        <p>Accepted: PDF, DOC, DOCX</p>
+                        <p>Max size: 10MB</p>
+                     </div>
+                  )}
                </div>
-               <p className="text-[12px] font-black uppercase tracking-[0.5em]">Release to Transmit</p>
-            </motion.div>
-         )}
-      </AnimatePresence>
-    </motion.div>
+             )}
+          </div>
+       </div>
+
+       <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept=".pdf,.doc,.docx"
+          onChange={handleFileChange}
+       />
+    </div>
   )
 }

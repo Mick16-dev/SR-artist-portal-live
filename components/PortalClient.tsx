@@ -227,7 +227,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
            {/* Mandatory Assets Assets */}
            <section className="space-y-12">
               <div className="flex items-center gap-6">
-                 <h2 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900 shrink-0">Required Documents</h2>
+                 <h2 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900 shrink-0">Your Documents</h2>
                  <div className="h-px w-full bg-slate-100" />
               </div>
               
@@ -257,31 +257,19 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                  
                  <div className="space-y-6">
                     <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 italic">Production Details</h4>
-                    <div className="space-y-3">
-                       <div className="bg-slate-950 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-                          <div className="relative z-10 space-y-4">
-                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-white">
-                                   <Icons.Key />
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Verified Stage</span>
-                             </div>
-                             <p className="text-3xl font-black text-white italic tracking-tighter leading-none">{show?.venue_name || 'Venue TBA'}</p>
-                             <p className="text-sm font-bold text-white/40 uppercase tracking-widest">{show?.city || 'City TBA'}</p>
-                          </div>
-                      </div>
-                      
-                      <div className="bg-slate-50 p-8 rounded-[2.5rem] space-y-1 border border-slate-100">
-                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Show Date</p>
-                         <p className="text-xl font-black tracking-tight text-slate-900 italic">
-                            {show?.show_date ? format(new Date(show.show_date), 'MMMM do, yyyy') : 'Date TBA'}
-                         </p>
-                         {show?.show_time && (
-                           <p className="text-sm font-bold text-slate-500 tracking-widest uppercase mt-4 border-t border-slate-200 pt-4">
-                             Doors/Start: <span className="text-indigo-600">{show.show_time}</span>
-                           </p>
-                         )}
-                      </div>
+                    <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 text-slate-700 font-semibold text-sm">
+                       <div className="flex items-center gap-3">
+                          <span className="text-lg">📍</span>
+                          <span>{show?.venue_name || 'Venue TBA'}, {show?.city || 'City TBA'}</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                          <span className="text-lg">📅</span>
+                          <span>{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMMM d yyyy') : 'Date TBA'}</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                          <span className="text-lg">⏰</span>
+                          <span>{show?.show_time || 'Time TBA'}</span>
+                       </div>
                     </div>
                  </div>
 
