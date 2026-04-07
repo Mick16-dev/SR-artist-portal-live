@@ -184,6 +184,15 @@ export default async function PortalPage({
       : Promise.resolve({ data: null, error: null })
   ])
 
+  // DEBUG RAW DATA:
+  console.log('DEBUG SHOW DATA:', { 
+    showId, 
+    token: cleanToken, 
+    showData: showById.data, 
+    error: (showById as any).error, 
+    showRecordState: !!showRecord 
+  })
+
   const show = showRecord || showById.data
   const showArtist = (show?.artists as any) || artist?.data
 
@@ -241,9 +250,32 @@ export default async function PortalPage({
   // If shows lookup failed, build a best-effort show model from material fields.
   const materialFallback = materials[0] || null
 
-  // Safety check
+  // Safety check with DIAGNOSTIC UI:
   if (forceInvalidToken || (!show && materials.length === 0)) {
-    return <InvalidToken receivedToken={cleanToken || 'none'} />
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-10 text-slate-100 font-mono text-xs">
+        <div className="max-w-xl w-full space-y-4 border border-red-500/20 bg-red-500/5 p-8 rounded-2xl">
+          <p className="text-red-400 font-bold uppercase tracking-widest text-base mb-4">Diagnostic: Data Load Failed</p>
+          <pre className="bg-black/40 p-4 rounded-xl border border-white/5 overflow-auto max-h-96 whitespace-pre-wrap">
+            {JSON.stringify({
+              token: cleanToken,
+              resolvedShowId: showId,
+              supabaseError: (showById as any).error || 'None',
+              hasShowRecord: !!show,
+              materialsFound: materials.length,
+              showMatchId: (showById.data as any)?.id || 'Null'
+            }, null, 2)}
+          </pre>
+          <p className="text-slate-500 leading-relaxed pt-2">
+            The system successfully processed your token but could not find a matching record in the 'shows' table. 
+            Check if the ID exists in the 'shows' table under either 'id' or 'show_id' columns.
+          </p>
+          <div className="pt-6">
+            <InvalidToken receivedToken={cleanToken || 'none'} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Graceful Fallbacks for missing relational data
