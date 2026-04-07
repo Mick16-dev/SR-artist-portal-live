@@ -5,15 +5,23 @@ import confetti from 'canvas-confetti'
 import { differenceInDays, format, isPast, isToday } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
-
-// Hardware Infrastructure Icons - Custom 2.5px strokes for high-end tool feel
-const Icons = {
-  Logo: () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-       <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-    </svg>
-  )
-}
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Music, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Mail, 
+  Moon, 
+  Sun, 
+  CheckCircle2, 
+  AlertCircle, 
+  ChevronRight,
+  Info,
+  ExternalLink,
+  UploadCloud,
+  FileText
+} from 'lucide-react'
 
 import { ProgressBar } from './ProgressBar'
 import { DocumentCard } from './DocumentCard'
@@ -52,44 +60,31 @@ interface PortalClientProps {
 
 export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-
-  // Standard 5-Document Production Blueprint
-  const productionBlueprint = [
-    { name: 'Primary Technical Rider', desc: 'Secure audio, monitor, and lighting patch.' },
-    { name: 'Stage Plot & Input List', desc: 'Physical positioning and channel mapping.' },
-    { name: 'Hospitality Specification', desc: 'Catering and green room requirements.' },
-    { name: 'High-Res Publicity Photo', desc: 'Mandatory for press and venue marketing.' },
-    { name: 'Insurance & PLI Certificate', desc: 'Mandatory public liability clearance.' }
-  ]
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const isPreview = token === 'preview-mode'
-  
-  const materialsToRender = isPreview ? productionBlueprint.map((b, i) => ({
-    id: `p-${i}`,
-    item_name: b.name,
-    description: b.desc,
-    status: i === 2 ? 'submitted' : 'pending',
-    deadline: '2026-05-01',
-    portal_token: `preview-${i}`,
-    file_url: '#'
-  })) as Material[] : initialMaterials
+  const materialsToRender = isPreview ? [
+    { id: '1', item_name: 'Primary Technical Rider', description: 'Secure audio, monitor, and lighting patch.', status: 'pending', deadline: '2026-05-01', portal_token: 'p1' },
+    { id: '2', item_name: 'Stage Plot & Input List', description: 'Physical positioning and channel mapping.', status: 'submitted', deadline: '2026-05-01', portal_token: 'p2' },
+    { id: '3', item_name: 'Hospitality Specification', description: 'Catering and green room requirements.', status: 'pending', deadline: '2026-05-01', portal_token: 'p3' },
+  ] as Material[] : initialMaterials
 
   useEffect(() => {
-    const storedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('artist-portal-theme') : null
-    if (storedTheme === 'dark' || storedTheme === 'light') {
-      setTheme(storedTheme)
-    }
+    const storedTheme = window.localStorage.getItem('artist-portal-theme') as 'light' | 'dark'
+    if (storedTheme) setTheme(storedTheme)
+    setIsLoaded(true)
   }, [])
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (isLoaded) {
+      document.documentElement.classList.toggle('dark', theme === 'dark')
       window.localStorage.setItem('artist-portal-theme', theme)
     }
-  }, [theme])
+  }, [theme, isLoaded])
 
   // Real-Time Production Sync
   useEffect(() => {
-    if (isPreview) return
+    if (isPreview || !isLoaded) return
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -98,60 +93,23 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
     const channel = supabase
       .channel('production-updates')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'materials',
-        filter: `show_id=eq.${showId}`
-      }, () => {
-        // Instant refresh on any database change for THIS show
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'materials', filter: `show_id=eq.${showId}` }, () => {
         window.location.reload() 
       })
       .subscribe()
 
-    const tokenChannel = token
-      ? supabase
-          .channel('production-updates-token')
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'materials',
-            filter: `portal_token=eq.${token}`,
-          }, () => {
-            window.location.reload()
-          })
-          .subscribe()
-      : null
-
-    return () => {
-      supabase.removeChannel(channel)
-      if (tokenChannel) supabase.removeChannel(tokenChannel)
-    }
-  }, [showId, isPreview, token])
+    return () => { supabase.removeChannel(channel) }
+  }, [showId, isPreview, isLoaded])
 
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
   const pendingMaterials = materialsToRender.filter((m) => m.status !== 'submitted')
-  const dueTodayCount = pendingMaterials.filter((m) => isToday(new Date(m.deadline))).length
   const overdueCount = pendingMaterials.filter((m) => !isToday(new Date(m.deadline)) && isPast(new Date(m.deadline))).length
-  const nextDeadlineMaterial = pendingMaterials
-    .slice()
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())[0]
-  const nextDeadlineLabel = nextDeadlineMaterial
-    ? isToday(new Date(nextDeadlineMaterial.deadline))
-      ? 'Today'
-      : `${Math.max(0, differenceInDays(new Date(nextDeadlineMaterial.deadline), new Date()))} day(s)`
-    : 'Completed'
-
+  
   useEffect(() => {
     if (isComplete) {
-      confetti({ 
-        particleCount: 150, 
-        spread: 90, 
-        origin: { y: 0.6 },
-        colors: ['#4f46e5', '#10b981', '#f59e0b']
-      })
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
     }
   }, [isComplete])
 
@@ -161,179 +119,224 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       fd.append('token', materialToken)
       fd.append('item_name', name)
       fd.append('file', file)
-
-      const res = await fetch(process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK!, {
-        method: 'POST',
-        body: fd
-      })
-
+      const res = await fetch(process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK!, { method: 'POST', body: fd })
       if (!res.ok) throw new Error()
-      
-      toast.success(`${name} transmitted to production.`)
-      // Note: Real state sync would happen via Supabase subscription or refresh
+      toast.success(`${name} transmitted successfully.`)
       return true
     } catch {
-      toast.error('Transmission failed. Check network status.')
+      toast.error('Transmission failed.')
       return false
     }
   }
 
-  const isDark = theme === 'dark'
+  if (!isLoaded) return null
 
   return (
-    <div className={`${isDark ? 'dark' : ''}`}>
-    <div className="min-h-screen bg-slate-50 font-sans antialiased dark:bg-slate-950">
-      <Toaster position="top-center" richColors />
+    <div className="min-h-screen theme-transition bg-white dark:bg-[#020617] text-slate-900 dark:text-slate-100 selection:bg-blue-500/30">
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px]" />
+      </div>
 
-      <nav className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-            <div className="flex items-center gap-3">
-               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-slate-700">
-                  <Icons.Logo />
-               </div>
-               <div>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">PS-promotion</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Artist Portal</p>
-               </div>
+      <nav className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-[#020617]/80">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+              <Music size={22} strokeWidth={2.5} />
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                {isDark ? 'Light mode' : 'Dark mode'}
-              </button>
-              <div className="text-right">
-                <p className="text-xs text-slate-500 dark:text-slate-400">Venue</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{show?.venue_name || 'TBA'}</p>
-              </div>
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Production Hub</p>
+              <h2 className="text-xl font-bold tracking-tight">Artist Portal</h2>
             </div>
-         </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+             <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/60 bg-white/50 text-slate-600 transition-all hover:bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <AnimatePresence mode="wait">
+                {theme === 'dark' ? (
+                  <motion.div key="moon" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <Moon size={18} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="sun" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <Sun size={18} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+            <div className="hidden lg:block h-10 w-px bg-slate-200/60 dark:bg-slate-800/60" />
+            <div className="hidden sm:block text-right">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Venue</p>
+              <p className="max-w-[200px] truncate text-sm font-bold">{show?.venue_name || 'TBA'}</p>
+            </div>
+          </div>
+        </div>
       </nav>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
         
-        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-           <div className="mb-6 flex items-center justify-between">
-             <div>
-               <p className="text-sm text-slate-500 dark:text-slate-400">Welcome</p>
-               <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{artist?.name || 'Artist TBA'}</h1>
-             </div>
-             <div className="text-right">
-               <p className="text-sm text-slate-500 dark:text-slate-400">Submission progress</p>
-               <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{submittedCount}/{totalCount}</p>
-             </div>
-           </div>
-           <div className="grid gap-6 lg:grid-cols-3">
-              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                <p>Upload the required documents listed below.</p>
-                <p>Track deadlines in real time and submit files directly to production.</p>
+        {/* Header Section */}
+        <header className="mb-14">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            transition={{ duration: 0.5 }}
+            className="flex flex-col lg:flex-row lg:items-end justify-between gap-8"
+          >
+            <div className="max-w-2xl">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400">
+                <CheckCircle2 size={12} />
+                Secure Handshake Live
+              </p>
+              <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
+                {artist?.name || 'Artist TBA'}
+              </h1>
+              <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                Your dedicated production gateway for <span className="text-slate-900 dark:text-slate-200">{show?.venue_name}</span>. 
+                Please transmit all mandatory assets before the deadline.
+              </p>
+            </div>
+            
+            <div className="w-full lg:w-80 space-y-4">
+              <div className="flex items-center justify-between text-sm font-bold">
+                <span className="text-slate-500 uppercase tracking-widest">Progress</span>
+                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{submittedCount} / {totalCount} Files</span>
               </div>
-              <div className="rounded-xl bg-slate-50 p-5 dark:bg-slate-800/70">
-                 <ProgressBar total={totalCount} submittedCount={submittedCount} />
-                 <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                    <span>Live sync enabled</span>
-                    <span>{show?.show_date ? format(new Date(show.show_date), 'MMM d, yyyy') : 'Date TBA'}</span>
-                 </div>
+              <ProgressBar total={totalCount} submittedCount={submittedCount} />
+              <div className="flex justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                <span>Production Pipeline</span>
+                <span>{Math.round((submittedCount/totalCount)*100)}% Sync</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Due today</p>
-                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{dueTodayCount}</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Overdue</p>
-                  <p className="text-lg font-semibold text-rose-600">{overdueCount}</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Next deadline</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{nextDeadlineLabel}</p>
-                </div>
-              </div>
-           </div>
-        </section>
+            </div>
+          </motion.div>
+        </header>
 
-        {/* Organized Production Grid */}
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-           
-           {/* Mandatory Assets Assets */}
-          <section className="space-y-6">
-             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Required Documents</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{totalCount} items</p>
+        {/* Bento Grid Layout */}
+        <div className="grid gap-10 lg:grid-cols-12">
+          
+          <div className="lg:col-span-8 space-y-10">
+            <section>
+              <div className="mb-8 flex items-center justify-between border-b border-slate-200/60 pb-4 dark:border-slate-800/60">
+                <h3 className="text-xl font-bold flex items-center gap-3">
+                  <FileText className="text-indigo-500" size={24} />
+                  Required Production Assets
+                </h3>
+                <div className="flex gap-2">
+                   {overdueCount > 0 && (
+                     <span className="flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+                       <AlertCircle size={14} />
+                       {overdueCount} Overdue
+                     </span>
+                   )}
+                </div>
               </div>
               
-              <div className="space-y-6">
-                 {materialsToRender.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
-                       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                          <span className="text-2xl">🔒</span>
-                       </div>
-                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">No active documents</p>
-                       <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                          The promoter has not scheduled any mandatory materials for this specific show in the database yet.
-                       </p>
-                    </div>
-                 ) : (
-                  materialsToRender.map((m) => (
-                      <DocumentCard
-                         key={m.id}
-                         material={m}
-                         onUpload={handleUpload}
-                      />
-                   ))
-                 )}
-              </div>
-           </section>
-
-           {/* Support & Support & Metadata Meta */}
-           <aside className="space-y-6">
-              <div className="sticky top-6 space-y-6">
-                 
-                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Show Details</h4>
-                    <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                       <div className="flex items-center gap-3">
-                          <span>📍</span>
-                          <span>{show?.venue_name || 'Venue TBA'}, {show?.city || 'City TBA'}</span>
-                       </div>
-                       <div className="flex items-center gap-3">
-                          <span>📅</span>
-                          <span>{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMMM d yyyy') : 'Date TBA'}</span>
-                       </div>
-                       <div className="flex items-center gap-3">
-                          <span>⏰</span>
-                          <span>{show?.show_time || 'Time TBA'}</span>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Support</h4>
-                    <a 
-                      href={`mailto:${show.promoter_email}`}
-                      className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              <div className="grid gap-6 sm:grid-cols-1">
+                {materialsToRender.length === 0 ? (
+                   <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-16 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
+                         <span className="text-3xl">☕</span>
+                      </div>
+                      <h4 className="text-xl font-bold">Awaiting Configuration</h4>
+                      <p className="mx-auto mt-3 max-w-xs text-sm text-slate-500 leading-relaxed">
+                         The production team hasn't assigned any mandatory materials to your portal yet.
+                      </p>
+                   </div>
+                ) : (
+                  materialsToRender.map((m, idx) => (
+                    <motion.div 
+                      key={m.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
                     >
-                       <p className="text-xs text-slate-500 dark:text-slate-400">Contact promoter</p>
-                       <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{show?.promoter_name || 'Promoter Team'}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{show?.promoter_email || 'No email configured'}</p>
-                       </div>
-                    </a>
-                 </div>
-
+                      <DocumentCard material={m} onUpload={handleUpload} />
+                    </motion.div>
+                  ))
+                )}
               </div>
-           </aside>
-        </div>
+            </section>
+          </div>
 
+          <div className="lg:col-span-4 space-y-8">
+            {/* Show Meta Widget */}
+            <section className="group sticky top-32 rounded-[2rem] border border-slate-200/60 bg-white p-8 shadow-2xl shadow-slate-200/20 theme-transition dark:border-slate-800/60 dark:bg-slate-900/40 dark:shadow-none">
+              <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400">Metadata Baseline</h4>
+              
+              <div className="space-y-8">
+                <div className="flex gap-4 items-start">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400 group-hover:text-indigo-500 transition-colors">
+                    <MapPin size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Venue & Location</span>
+                    <p className="text-base font-bold leading-tight">{show?.venue_name || 'TBA'}, {show?.city || 'TBA'}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 items-start">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-slate-800 group-hover:text-amber-500 transition-colors">
+                    <Calendar size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Production Date</span>
+                    <p className="text-base font-bold">{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMM d yyyy') : 'TBA'}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 items-start">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-slate-800 group-hover:text-emerald-500 transition-colors">
+                    <Clock size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Curtain Call</span>
+                    <p className="text-base font-bold">{show?.show_time || 'TBA'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 border-t border-slate-100 pt-8 dark:border-slate-800">
+                <h5 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Promoter Liaison</h5>
+                <a 
+                  href={`mailto:${show.promoter_email}`}
+                  className="flex items-center justify-between group/email rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800"
+                >
+                   <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 group-hover/email:scale-110 transition-transform">
+                        <Mail size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold leading-none">{show?.promoter_name || 'Production Lead'}</p>
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{show?.promoter_email}</p>
+                      </div>
+                   </div>
+                   <ChevronRight size={14} className="text-slate-300 group-hover/email:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </section>
+          </div>
+        </div>
       </main>
 
-      <footer className="mt-12 border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
-         <div className="mx-auto max-w-6xl px-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            PS-promotion Artist Portal
+      <footer className="mt-20 border-t border-slate-200/60 bg-white/50 py-12 dark:border-slate-800/60 dark:bg-transparent">
+         <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                 <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-[10px] font-bold">PS</div>
+                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">© 2026 PS-promotion</p>
+              </div>
+              <div className="flex gap-8 text-xs font-bold text-slate-400 uppercase tracking-tight">
+                <a href="#" className="hover:text-indigo-500 transition-colors">Privacy Protocol</a>
+                <a href="#" className="hover:text-indigo-500 transition-colors">Security Standars</a>
+                <a href="#" className="hover:text-indigo-500 transition-colors">Contact Support</a>
+              </div>
+            </div>
          </div>
       </footer>
-    </div>
     </div>
   )
 }

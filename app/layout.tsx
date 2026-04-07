@@ -16,10 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="min-h-screen bg-gray-50 font-sans antialiased text-gray-900">
-        <span className="text-xl font-black tracking-tighter italic uppercase block leading-none mb-1">PS-promotion</span>
+      <body className="min-h-screen antialiased">
         {children}
-        <Toaster position="top-center" richColors />
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   )

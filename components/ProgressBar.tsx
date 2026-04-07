@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Check } from 'lucide-react'
 
 interface ProgressBarProps {
   total: number
@@ -12,40 +13,35 @@ export function ProgressBar({ total, submittedCount }: ProgressBarProps) {
   const percentage = total > 0 ? Math.round((submittedCount / total) * 100) : 0
   const isComplete = total > 0 && submittedCount === total
 
-  const getColor = () => {
-    if (percentage <= 40) return 'bg-red-500'
-    if (percentage <= 79) return 'bg-amber-500'
-    if (percentage <= 99) return 'bg-indigo-600'
-    return 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-  }
-
   if (isComplete) {
     return (
-      <div className="w-full flex items-center justify-center gap-3 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl">
-        <div className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full flex items-center gap-4 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl"
+      >
+        <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+          <Check size={20} strokeWidth={3} />
         </div>
-        <span className="text-emerald-700 font-bold text-sm tracking-tight">All documents submitted. You're all set!</span>
-      </div>
+        <div>
+          <p className="text-emerald-600 dark:text-emerald-400 font-black text-xs uppercase tracking-widest">Handshake Complete</p>
+          <p className="text-emerald-900 dark:text-emerald-100 font-bold text-sm tracking-tight pt-0.5">All mandatory assets submitted</p>
+        </div>
+      </motion.div>
     )
   }
 
   return (
-    <div className="w-full space-y-3">
-      <div className="flex items-center justify-between text-slate-600 font-bold text-sm">
-         <span>{submittedCount} of {total} documents submitted</span>
-         <span className="text-slate-400">{percentage}%</span>
-      </div>
-      
-      <div className="relative h-6 bg-slate-100 rounded-full overflow-hidden border border-slate-200 shadow-inner">
+    <div className="w-full space-y-4">
+      <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-800/50 shadow-inner">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1.2, ease: [0.19, 1, 0.22, 1] }}
-          className={`h-full transition-colors duration-500 ${getColor()}`}
-        />
+          transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+          className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 relative"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.15)_50%,rgba(255,255,255,0.15)_75%,transparent_75%,transparent)] bg-[length:24px_24px] animate-[progress-stripe_2s_linear_infinite]" />
+        </motion.div>
       </div>
     </div>
   )
