@@ -167,15 +167,25 @@ export default async function PortalPage({
   // 4. Continue even without showId so token-based material fallback can still recover access.
   // 5. Success Flow - Fetch all data
   const isResolvedShowIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId || '')
-  const [showById] = await Promise.all([
+  
+  // Try to fetch the full show record, checking both 'id' and 'show_id' columns
+  const [showById, artist] = await Promise.all([
     showRecord
       ? Promise.resolve({ data: showRecord, error: null })
       : isResolvedShowIdUuid
-        ? supabase!.from('shows').select('*').eq('id', showId).maybeSingle()
+        ? supabase!.from('shows')
+            .select('*, artists(*)') // Try to join artists if possible
+            .or(`id.eq.${showId},show_id.eq.${showId}`)
+            .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
+    // Explicit artist lookup if show is found but name is missing
+    (!showRecord?.artist_name && showRecord?.artist_id)
+      ? supabase!.from('artists').select('*').eq('id', showRecord.artist_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null })
   ])
 
   const show = showRecord || showById.data
+  const showArtist = (show?.artists as any) || artist?.data
 
   const materialShowKeys = [
     showId,
@@ -240,21 +250,26 @@ export default async function PortalPage({
   const normalizedShow = show
     ? {
         ...show,
-        venue_name: show.venue_name || show.venue || 'Venue TBA',
+        venue_name: show.venue_name || show.venue || show.venue_id || 'Venue TBA',
+        city: show.city || 'TBA',
+        show_date: show.show_date || show.date || '',
+        show_time: show.show_time || show.time || 'TBA',
         promoter_name: show.promoter_name || 'Promoter Team',
         promoter_email: show.promoter_email || show.artist_email || '',
       }
     : {
-        venue_name: materialFallback?.venue_name || materialFallback?.venue || 'Show Details Pending Sync',
+        venue_name: materialFallback?.venue_name || materialFallback?.venue || materialFallback?.venue_id || 'Show Details Pending Sync',
         city: materialFallback?.city || 'TBA',
-        show_date: materialFallback?.show_date || '',
-        show_time: materialFallback?.show_time || 'TBA',
+        show_date: materialFallback?.show_date || materialFallback?.date || '',
+        show_time: materialFallback?.show_time || materialFallback?.time || 'TBA',
         promoter_name: materialFallback?.promoter_name || 'Promoter Team',
         promoter_email: materialFallback?.promoter_email || materialFallback?.artist_email || '',
       }
 
   const materialArtistName = materials.find((m) => typeof m.artist_name === 'string' && m.artist_name.trim())?.artist_name
-  const safeArtist = { name: show?.artist_name || materialArtistName || materialFallback?.artist_name || 'Artist TBA' }
+  const safeArtist = { 
+    name: show?.artist_name || (showArtist as any)?.name || (showArtist as any)?.artist_name || materialArtistName || materialFallback?.artist_name || 'Artist TBA' 
+  }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
