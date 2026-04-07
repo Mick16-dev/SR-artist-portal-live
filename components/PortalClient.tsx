@@ -1,27 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
-import { format } from 'date-fns'
+import { differenceInDays, format, isPast, isToday } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
 
 // Hardware Infrastructure Icons - Custom 2.5px strokes for high-end tool feel
 const Icons = {
-  Base: () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-       <rect x="2" y="2" width="20" height="20" rx="4"/><path d="M7 12h10"/><path d="M12 7v10"/>
-    </svg>
-  ),
   Logo: () => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-    </svg>
-  ),
-  Key: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-       <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3m-3-3l-2.5-2.5"/>
     </svg>
   )
 }
@@ -62,6 +51,7 @@ interface PortalClientProps {
 }
 
 export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   // Standard 5-Document Production Blueprint
   const productionBlueprint = [
@@ -83,6 +73,19 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     portal_token: `preview-${i}`,
     file_url: '#'
   })) as Material[] : initialMaterials
+
+  useEffect(() => {
+    const storedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('artist-portal-theme') : null
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      setTheme(storedTheme)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('artist-portal-theme', theme)
+    }
+  }, [theme])
 
   // Real-Time Production Sync
   useEffect(() => {
@@ -106,12 +109,40 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [showId, isPreview])
+    const tokenChannel = token
+      ? supabase
+          .channel('production-updates-token')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'materials',
+            filter: `portal_token=eq.${token}`,
+          }, () => {
+            window.location.reload()
+          })
+          .subscribe()
+      : null
+
+    return () => {
+      supabase.removeChannel(channel)
+      if (tokenChannel) supabase.removeChannel(tokenChannel)
+    }
+  }, [showId, isPreview, token])
 
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
+  const pendingMaterials = materialsToRender.filter((m) => m.status !== 'submitted')
+  const dueTodayCount = pendingMaterials.filter((m) => isToday(new Date(m.deadline))).length
+  const overdueCount = pendingMaterials.filter((m) => !isToday(new Date(m.deadline)) && isPast(new Date(m.deadline))).length
+  const nextDeadlineMaterial = pendingMaterials
+    .slice()
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())[0]
+  const nextDeadlineLabel = nextDeadlineMaterial
+    ? isToday(new Date(nextDeadlineMaterial.deadline))
+      ? 'Today'
+      : `${Math.max(0, differenceInDays(new Date(nextDeadlineMaterial.deadline), new Date()))} day(s)`
+    : 'Completed'
 
   useEffect(() => {
     if (isComplete) {
@@ -147,108 +178,108 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     }
   }
 
+  const isDark = theme === 'dark'
+
   return (
-    <div className="bg-white min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900 antialiased overflow-x-hidden">
+    <div className={`${isDark ? 'dark' : ''}`}>
+    <div className="min-h-screen bg-slate-50 font-sans antialiased dark:bg-slate-950">
       <Toaster position="top-center" richColors />
 
-      {/* Floating Control Bar - Replaces the generic Header */}
-      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-3rem)] max-w-5xl">
-         <div className="bg-slate-950 text-white rounded-[1.5rem] px-8 py-5 flex items-center justify-between shadow-2xl border border-white/10 backdrop-blur-xl">
-            <div className="flex items-center gap-4">
-               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+      <nav className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+            <div className="flex items-center gap-3">
+               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-slate-700">
                   <Icons.Logo />
                </div>
                <div>
-                  <p className="text-[9px] font-black tracking-widest text-white/30 uppercase mb-1">Production Hub</p>
-                  <span className="text-2xl font-black tracking-tighter italic uppercase underline decoration-indigo-600/50 decoration-4 underline-offset-4">PS-promotion</span>
-                  <span className="text-[9px] font-black tracking-[0.3em] text-white/30 uppercase">Artist Portal</span>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">PS-promotion</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Artist Portal</p>
                </div>
             </div>
-            
-            <div className="flex items-center gap-8">
-               <div className="flex flex-col items-end px-12 border-x border-white/10">
-                   <p className="text-[9px] font-black tracking-widest text-white/30 uppercase mb-1">Production Venue</p>
-                   <span className="text-sm font-bold tracking-tight text-white">{show?.venue_name || 'TBA'}</span>
-                </div>
-               <div className="h-6 w-px bg-white/10" />
-               <div className="flex flex-col items-start min-w-[60px]">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1 leading-none">Activity</span>
-                  <span className="text-sm font-black tracking-tighter">{submittedCount}/{totalCount}</span>
-               </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                {isDark ? 'Light mode' : 'Dark mode'}
+              </button>
+              <div className="text-right">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Venue</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{show?.venue_name || 'TBA'}</p>
+              </div>
             </div>
          </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 pt-40 pb-48">
+      <main className="mx-auto max-w-6xl px-6 py-8">
         
-        {/* Kinetic Header Section */}
-        <section className="mb-24 space-y-10">
-           <motion.div
-             initial={{ opacity: 0, x: -20 }}
-             animate={{ opacity: 1, x: 0 }}
-             className="flex flex-wrap items-center gap-4"
-           >
-              <div className="inline-flex bg-slate-950 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                 Secure Link Verified
+        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+           <div className="mb-6 flex items-center justify-between">
+             <div>
+               <p className="text-sm text-slate-500 dark:text-slate-400">Welcome</p>
+               <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{artist?.name || 'Artist TBA'}</h1>
+             </div>
+             <div className="text-right">
+               <p className="text-sm text-slate-500 dark:text-slate-400">Submission progress</p>
+               <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{submittedCount}/{totalCount}</p>
+             </div>
+           </div>
+           <div className="grid gap-6 lg:grid-cols-3">
+              <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                <p>Upload the required documents listed below.</p>
+                <p>Track deadlines in real time and submit files directly to production.</p>
               </div>
-              <div className="h-4 w-px bg-slate-100" />
-              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
-                 PS_PROMOTION_ENCRYPTION_ENABLED: {show?.show_date?.replace(/-/g, '') || '00000000'}
-              </div>
-           </motion.div>
-           
-           <h1 className="text-7xl lg:text-[10rem] font-black leading-[0.85] tracking-tighter uppercase italic text-slate-900">
-              {artist?.name?.toUpperCase() || 'ARTIST TBA'}
-           </h1>
-           
-           <div className="grid lg:grid-cols-2 gap-16 items-start pt-6">
-              <div className="space-y-6">
-                 <p className="text-2xl lg:text-4xl text-slate-400 font-bold tracking-tight leading-[1.1] italic">
-                    Welcome to your <span className="text-slate-950">Active Production Hub.</span>
-                 </p>
-                 <p className="text-lg lg:text-xl text-slate-500 font-bold leading-relaxed max-w-lg italic">
-                    Every file submitted here is encrypted and transmitted directly to the production team at <span className="text-slate-900 underline decoration-indigo-200 decoration-8 underline-offset-4">{show?.venue_name || 'the venue'}</span>.
-                 </p>
-              </div>
-              
-              <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100/50 space-y-6">
+              <div className="rounded-xl bg-slate-50 p-5 dark:bg-slate-800/70">
                  <ProgressBar total={totalCount} submittedCount={submittedCount} />
-                 <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 pt-2 border-t border-slate-100">
-                    <span>Global Progress Meter</span>
-                    <span className="text-indigo-600">Secure Protocol</span>
+                 <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <span>Live sync enabled</span>
+                    <span>{show?.show_date ? format(new Date(show.show_date), 'MMM d, yyyy') : 'Date TBA'}</span>
                  </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Due today</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{dueTodayCount}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Overdue</p>
+                  <p className="text-lg font-semibold text-rose-600">{overdueCount}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Next deadline</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{nextDeadlineLabel}</p>
+                </div>
               </div>
            </div>
         </section>
 
         {/* Organized Production Grid */}
-        <div className="grid lg:grid-cols-[1fr_350px] gap-24">
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
            
            {/* Mandatory Assets Assets */}
-           <section className="space-y-12">
-              <div className="flex items-center gap-6">
-                 <h2 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900 shrink-0">Your Documents</h2>
-                 <div className="h-px w-full bg-slate-100" />
+          <section className="space-y-6">
+             <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Required Documents</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{totalCount} items</p>
               </div>
               
               <div className="space-y-6">
                  {materialsToRender.length === 0 ? (
-                    <div className="p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center space-y-4 shadow-sm">
-                       <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+                       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
                           <span className="text-2xl">🔒</span>
                        </div>
-                       <p className="text-slate-900 font-black uppercase tracking-widest text-sm">No Active Documents</p>
-                       <p className="text-slate-500 text-sm font-semibold max-w-sm">
+                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">No active documents</p>
+                       <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                           The promoter has not scheduled any mandatory materials for this specific show in the database yet.
                        </p>
                     </div>
                  ) : (
-                   materialsToRender.map((m, idx) => (
-                      <DocumentCard 
-                         key={m.id} 
-                         material={m} 
+                  materialsToRender.map((m) => (
+                      <DocumentCard
+                         key={m.id}
+                         material={m}
                          onUpload={handleUpload}
-                         index={idx}
                       />
                    ))
                  )}
@@ -256,37 +287,37 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
            </section>
 
            {/* Support & Support & Metadata Meta */}
-           <aside className="space-y-12">
-              <div className="sticky top-40 space-y-12">
+           <aside className="space-y-6">
+              <div className="sticky top-6 space-y-6">
                  
-                 <div className="space-y-6">
-                    <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 italic">Production Details</h4>
-                    <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 text-slate-700 font-semibold text-sm">
+                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Show Details</h4>
+                    <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
                        <div className="flex items-center gap-3">
-                          <span className="text-lg">📍</span>
+                          <span>📍</span>
                           <span>{show?.venue_name || 'Venue TBA'}, {show?.city || 'City TBA'}</span>
                        </div>
                        <div className="flex items-center gap-3">
-                          <span className="text-lg">📅</span>
+                          <span>📅</span>
                           <span>{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMMM d yyyy') : 'Date TBA'}</span>
                        </div>
                        <div className="flex items-center gap-3">
-                          <span className="text-lg">⏰</span>
+                          <span>⏰</span>
                           <span>{show?.show_time || 'Time TBA'}</span>
                        </div>
                     </div>
                  </div>
 
-                 <div className="space-y-6">
-                    <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-300 italic">Assistance</h4>
+                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h4 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Support</h4>
                     <a 
                       href={`mailto:${show.promoter_email}`}
-                      className="flex flex-col gap-4 p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 group transition-all hover:bg-indigo-600"
+                      className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                     >
-                       <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700 group-hover:text-white transition-colors">Immediate Support</p>
+                       <p className="text-xs text-slate-500 dark:text-slate-400">Contact promoter</p>
                        <div>
-                          <p className="text-sm font-black text-slate-950 group-hover:text-white leading-none mb-1 transition-colors">{show?.promoter_name || 'Promoter Team'}</p>
-                          <p className="text-xs font-bold text-slate-400 group-hover:text-white/60 transition-colors">Promoter & Production Manager</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{show?.promoter_name || 'Promoter Team'}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{show?.promoter_email || 'No email configured'}</p>
                        </div>
                     </a>
                  </div>
@@ -297,18 +328,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
       </main>
 
-      <footer className="footer bg-slate-950 py-32 px-12 border-t border-white/5">
-         <div className="max-w-6xl mx-auto flex flex-col items-center">
-            <div className="flex items-center gap-2 opacity-20 hover:opacity-100 transition-opacity mb-12">
-               <Icons.Logo />
-               <span className="text-sm font-black text-white/20 tracking-tighter italic uppercase group-hover:text-red-500">PS-promotion</span>
-            </div>
-            
-            <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em] text-center max-w-sm leading-loose">
-               Secure Production Environment &bull; Automated Deployment 2026 &bull; Verified Portal Protocol
-            </p>
+      <footer className="mt-12 border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
+         <div className="mx-auto max-w-6xl px-6 text-center text-xs text-slate-500 dark:text-slate-400">
+            PS-promotion Artist Portal
          </div>
       </footer>
+    </div>
     </div>
   )
 }

@@ -90,7 +90,7 @@ export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
                  <div className="mt-8 p-5 bg-white/5 rounded-2xl border border-white/10 text-left">
                     <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Received Token (for debugging)</p>
                     <p className="font-mono text-sm text-amber-400 break-all">{receivedToken}</p>
-                    <p className="text-[10px] text-white/20 mt-2">Compare this to the <span className="text-white/40 font-bold">portal_token</span> column in your Supabase <span className="text-white/40 font-bold">shows</span> table.</p>
+                   <p className="text-[10px] text-white/20 mt-2">Compare this to the <span className="text-white/40 font-bold">portal_token</span> column in your Supabase <span className="text-white/40 font-bold">materials</span> table.</p>
                  </div>
                )}
            </motion.div>

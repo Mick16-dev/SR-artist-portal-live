@@ -13,17 +13,24 @@ function getSupabase() {
   return createClient(url, key)
 }
 
+function normalizeKey(value: unknown) {
+  return String(value || '').trim().replace(/^["']|["']$/g, '')
+}
+
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string, preview?: string }>
+  searchParams: Promise<{ token?: string, portal_token?: string, show_token?: string, t?: string, show_id?: string, sid?: string, preview?: string }>
 }) {
-  const { token, preview } = await searchParams
-  const cleanToken = token?.trim()
+  const { token, portal_token, show_token, t, show_id, sid, preview } = await searchParams
+  const rawToken = token ?? portal_token ?? show_token ?? t
+  const cleanToken = rawToken ? normalizeKey(decodeURIComponent(rawToken)) : undefined
+  const showHintId = normalizeKey(show_id ?? sid)
   const supabase = getSupabase()
 
   let showId = ''
-  let artistId = ''
+  let showRecord: Record<string, any> | null = null
+  let forceInvalidToken = false
 
   if (!supabase && preview !== 'true') {
     return (
@@ -49,8 +56,7 @@ export default async function PortalPage({
       .maybeSingle()
 
     if (latestShow) {
-      showId = latestShow.id
-      artistId = latestShow.artist_id
+      showId = normalizeKey(latestShow.id)
       console.log('Public view triggered: showing latest show', showId)
     } else {
       // No shows in DB, show mock/welcome instead
@@ -74,76 +80,181 @@ export default async function PortalPage({
      ]
      return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
-    // MULTI-LAYER TOKEN LOOKUP
-    // The URL token might be a portal_token, show_id (UUID), or Material token
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
-    
-    // Check 'shows' table for a match in portal_token, show_id, or id (if UUID)
-    const { data: showMatch } = await supabase!
-      .from('shows')
-      .select('id, show_id, artist_id')
-      .or(`portal_token.eq.${cleanToken},show_id.eq.${cleanToken}${isUuid ? `,id.eq.${cleanToken}` : ''}`)
-      .maybeSingle()
-
-    if (showMatch) {
-      showId = showMatch.id || showMatch.show_id
-      artistId = showMatch.artist_id
-    }
-
-    // Layer D: Check materials.portal_token
-    if (!showId) {
-      const { data: materialLink } = await supabase!
-        .from('materials')
-        .select('show_id, artist_id')
-        .eq('portal_token', cleanToken)
-        .limit(1)
+    // 2. MULTI-LAYER TOKEN LOOKUP
+    // Priority 1: Check for explicit show identifiers from URL (show_id or sid).
+    if (showHintId) {
+      const { data: hintedShow } = await supabase!
+        .from('shows')
+        .select('*')
+        .eq('id', showHintId)
         .maybeSingle()
 
-      if (materialLink) {
-        showId = materialLink.show_id
-        artistId = materialLink.artist_id
+      if (hintedShow) {
+        showId = normalizeKey(hintedShow.id)
+        showRecord = hintedShow
+      }
+    }
+
+    // Priority 2: Consolidated Show Lookup (portal_token OR show_id OR id).
+    // Using the requested .or() filter to handle multiple token types in one efficient query.
+    if (!showId && cleanToken) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
+      const { data: showMatch } = await supabase!
+        .from('shows')
+        .select('*')
+        .or(`portal_token.eq.${cleanToken},show_id.eq.${cleanToken}${isUuid ? `,id.eq.${cleanToken}` : ''}`)
+        .maybeSingle()
+
+      if (showMatch) {
+        showId = normalizeKey(showMatch.id)
+        showRecord = showMatch
+      }
+    }
+
+    // Priority 3: Check for material-level tokens if not found in shows.
+    if (!showId && cleanToken) {
+      const { data: materialLinks } = await supabase!
+        .from('materials')
+        .select('*')
+        .eq('portal_token', cleanToken)
+        .order('created_at', { ascending: false })
+        .limit(200)
+
+      if (materialLinks?.length) {
+        const distinctShowIds = Array.from(
+          new Set(materialLinks.map((m) => normalizeKey(m.show_id)).filter(Boolean))
+        )
+
+        if (showHintId) {
+          const strictLinks = materialLinks.filter((m) => normalizeKey(m.show_id) === showHintId)
+          if (!strictLinks.length) {
+            forceInvalidToken = true
+          } else if (showRecord) {
+             showId = showHintId
+          }
+        } else if (distinctShowIds.length === 1) {
+          const onlyShowId = distinctShowIds[0]
+          const { data: singleShow } = await supabase!
+            .from('shows')
+            .select('*')
+            .eq('id', onlyShowId)
+            .maybeSingle()
+
+          if (singleShow) {
+            showId = onlyShowId
+            showRecord = singleShow
+          }
+        } else if (distinctShowIds.length > 1) {
+          forceInvalidToken = true // Ambiguous token reuse -> refuse to guess.
+        }
+      }
+    }
+
+    // Priority 4: Final fallback - check if cleanToken is itself a show_id in the materials table.
+    if (!showId && cleanToken) {
+      const { data: materialsByShowId } = await supabase!
+        .from('materials')
+        .select('*')
+        .eq('show_id', cleanToken)
+        .limit(1)
+
+      if (materialsByShowId?.length) {
+        showId = normalizeKey(cleanToken)
       }
     }
   }
 
-  // 4. Handle Invalid Token state - show diagnostic info
-  if (!showId) {
+  // 4. Continue even without showId so token-based material fallback can still recover access.
+  // 5. Success Flow - Fetch all data
+  const isResolvedShowIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId || '')
+  const [showById] = await Promise.all([
+    showRecord
+      ? Promise.resolve({ data: showRecord, error: null })
+      : isResolvedShowIdUuid
+        ? supabase!.from('shows').select('*').eq('id', showId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+  ])
+
+  const show = showRecord || showById.data
+
+  const materialShowKeys = [
+    showId,
+  ].filter(Boolean) as string[]
+
+  let materials: any[] = []
+  if (materialShowKeys.length) {
+    const { data: materialsData } = await supabase!
+      .from('materials')
+      .select('*')
+      .in('show_id', materialShowKeys)
+      .order('deadline', { ascending: true })
+
+    materials = materialsData || []
+  }
+
+  // Ensure token links always surface assigned document rows even if show_id linkage is inconsistent.
+  if (cleanToken) {
+    const { data: materialsByToken } = await supabase!
+      .from('materials')
+      .select('*')
+      .eq('portal_token', cleanToken)
+      .order('deadline', { ascending: true })
+
+    if (materialsByToken?.length) {
+      const scopedByShow = showHintId
+        ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showHintId)
+        : showId
+          ? materialsByToken.filter((row) => normalizeKey(row.show_id) === showId)
+          : materialsByToken
+
+      const tokenMaterials = scopedByShow.length ? scopedByShow : materialsByToken
+      const merged = new Map<string, any>()
+      for (const row of materials) merged.set(normalizeKey(row.id), row)
+      for (const row of tokenMaterials) merged.set(normalizeKey(row.id), row)
+      materials = Array.from(merged.values())
+    }
+  }
+
+  // Final consistency pass: if we now know a show_id, always fetch the full required docs for that show.
+  if (showId) {
+    const { data: fullShowMaterials } = await supabase!
+      .from('materials')
+      .select('*')
+      .eq('show_id', showId)
+      .order('deadline', { ascending: true })
+
+    if (fullShowMaterials?.length) {
+      materials = fullShowMaterials
+    }
+  }
+
+  // If shows lookup failed, build a best-effort show model from material fields.
+  const materialFallback = materials[0] || null
+
+  // Safety check
+  if (forceInvalidToken || (!show && materials.length === 0)) {
     return <InvalidToken receivedToken={cleanToken || 'none'} />
   }
 
-  // 5. Success Flow - Fetch all data
-  // Try both id and show_id column to cover different Supabase schema setups
-  const [materialsById, materialsByShowId, showById, showByShowId, artist] = await Promise.all([
-    supabase!.from('materials').select('*').eq('show_id', showId).order('deadline', { ascending: true }),
-    supabase!.from('materials').select('*').eq('show_id', cleanToken).order('deadline', { ascending: true }),
-    supabase!.from('shows').select('*').eq('id', showId).maybeSingle(),
-    supabase!.from('shows').select('*').eq('show_id', showId).maybeSingle(),
-    supabase!.from('artists').select('*').eq('id', artistId).maybeSingle()
-  ])
-
-  const show = showById.data || showByShowId.data
-  const materials = (materialsById.data?.length ? materialsById.data : materialsByShowId.data) || []
-
-  // Safety check
-  if (!show) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-10 text-center space-y-6">
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">
-           <span className="text-sm font-black text-slate-900 tracking-tighter italic uppercase block mb-2">PS-promotion</span>
-          Data Conflict
-        </p>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-xs text-left font-mono space-y-2 w-full max-w-md">
-           <p className="text-red-600 font-bold uppercase">Debug Info:</p>
-           <p className="text-slate-600">showId resolved to: <strong>{showId}</strong></p>
-           <p className="text-slate-600">Token received: <strong>{cleanToken}</strong></p>
-           <p className="text-slate-500 mt-2">The show row could not be fetched. Check Supabase → shows table for this ID and verify the correct column name (id vs show_id).</p>
-        </div>
-      </div>
-    )
-  }
-
   // Graceful Fallbacks for missing relational data
-  const safeArtist = artist.data || { name: 'Artist TBA' }
+  const normalizedShow = show
+    ? {
+        ...show,
+        venue_name: show.venue_name || show.venue || 'Venue TBA',
+        promoter_name: show.promoter_name || 'Promoter Team',
+        promoter_email: show.promoter_email || show.artist_email || '',
+      }
+    : {
+        venue_name: materialFallback?.venue_name || materialFallback?.venue || 'Show Details Pending Sync',
+        city: materialFallback?.city || 'TBA',
+        show_date: materialFallback?.show_date || '',
+        show_time: materialFallback?.show_time || 'TBA',
+        promoter_name: materialFallback?.promoter_name || 'Promoter Team',
+        promoter_email: materialFallback?.promoter_email || materialFallback?.artist_email || '',
+      }
+
+  const materialArtistName = materials.find((m) => typeof m.artist_name === 'string' && m.artist_name.trim())?.artist_name
+  const safeArtist = { name: show?.artist_name || materialArtistName || materialFallback?.artist_name || 'Artist TBA' }
   const safeMaterials = materials || []
 
   // 6. Return the Client Component
@@ -152,7 +263,7 @@ export default async function PortalPage({
 
   return (
     <PortalClient
-      show={show}
+      show={normalizedShow}
       artist={safeArtist}
       materials={safeMaterials}
       token={uiToken}
