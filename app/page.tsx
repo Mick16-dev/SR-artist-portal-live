@@ -75,53 +75,19 @@ export default async function PortalPage({
      return <PortalClient show={mockShow} artist={mockArtist} materials={mockMaterials} token="preview-mode" showId="mock-id" />
   } else {
     // MULTI-LAYER TOKEN LOOKUP
-    // The URL token might be:
-    // A) The short showPortalToken stored in shows.portal_token (standard)
-    // B) A UUID stored in shows.id (raw show UUID fallback)
-    // C) A UUID n8n generated stored in shows.show_id (n8n-generated field)
-    // D) The portal_token on a material row
-
-    // Layer A: Check shows.portal_token (primary path)
-    const { data: byPortalToken } = await supabase!
+    // The URL token might be a portal_token, show_id (UUID), or Material token
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
+    
+    // Check 'shows' table for a match in portal_token, show_id, or id (if UUID)
+    const { data: showMatch } = await supabase!
       .from('shows')
       .select('id, show_id, artist_id')
-      .eq('portal_token', cleanToken)
+      .or(`portal_token.eq.${cleanToken},show_id.eq.${cleanToken}${isUuid ? `,id.eq.${cleanToken}` : ''}`)
       .maybeSingle()
 
-    if (byPortalToken) {
-      showId = byPortalToken.id || byPortalToken.show_id
-      artistId = byPortalToken.artist_id
-    }
-
-    // Layer B: Check shows.id directly (valid UUID format)
-    if (!showId) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
-      if (isUuid) {
-        const { data: byId } = await supabase!
-          .from('shows')
-          .select('id, show_id, artist_id')
-          .eq('id', cleanToken)
-          .maybeSingle()
-
-        if (byId) {
-          showId = byId.id || byId.show_id
-          artistId = byId.artist_id
-        }
-      }
-    }
-
-    // Layer C: Check shows.show_id (n8n workflows often store Dashboard show_id here)
-    if (!showId) {
-      const { data: byShowId } = await supabase!
-        .from('shows')
-        .select('id, show_id, artist_id')
-        .eq('show_id', cleanToken)
-        .maybeSingle()
-
-      if (byShowId) {
-        showId = byShowId.id || byShowId.show_id
-        artistId = byShowId.artist_id
-      }
+    if (showMatch) {
+      showId = showMatch.id || showMatch.show_id
+      artistId = showMatch.artist_id
     }
 
     // Layer D: Check materials.portal_token
