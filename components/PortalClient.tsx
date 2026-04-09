@@ -154,7 +154,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen theme-transition bg-white dark:bg-[#020617] text-slate-900 dark:text-slate-100 selection:bg-blue-500/30">
+    <div className="min-h-screen theme-transition bg-[rgb(var(--background))] text-[rgb(var(--foreground))] selection:bg-indigo-500/30">
       <AnimatePresence>
         {!isOnline && (
           <motion.div 
@@ -168,12 +168,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
         )}
       </AnimatePresence>
       {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-40">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px]" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/20 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px]" />
       </div>
 
-      <nav className={`sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-[#020617]/80 transition-all ${!isOnline ? 'pt-8 lg:pt-8' : ''}`}>
+      <nav className={`sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-950/80 transition-all ${!isOnline ? 'pt-8 lg:pt-8' : ''}`}>
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">

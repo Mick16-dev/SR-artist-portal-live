@@ -2,25 +2,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --ring: #94a3b8;
+  --background: 255, 255, 255;
+  --foreground: 15, 23, 42;
+  --card: 255, 255, 255;
+  --muted: 248, 250, 252;
+  --border: 226, 232, 240;
+  --indigo-soft: 238, 242, 255;
 }
 
 .dark {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --card: #0f172a;
-  --card-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --border: #1e293b;
-  --ring: #1e293b;
+  --background: 2, 6, 23;
+  --foreground: 248, 250, 252;
+  --card: 15, 23, 42;
+  --muted: 30, 41, 59;
+  --border: 30, 41, 59;
+  --indigo-soft: 30, 41, 59;
 }
 
 * {
@@ -32,8 +28,8 @@ html {
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -64,8 +60,9 @@ body {
 /* Glassmorphism utilities */
 .glass {
   background: rgba(var(--card), 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--border), 0.5);
 }
 
 /* Touch-friendly minimum tap targets */
@@ -80,7 +77,7 @@ input[type="file"] {
 
 /* Selection color */
 ::selection {
-  background-color: rgba(59, 130, 246, 0.2);
+  background-color: rgba(99, 102, 241, 0.2);
   color: inherit;
 }
 
