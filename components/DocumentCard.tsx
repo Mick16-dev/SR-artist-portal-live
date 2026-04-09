@@ -105,7 +105,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
 
   return (
     <motion.div 
-      whileHover={{ scale: 1.02, y: -5 }}
+      whileHover={{ scale: 1.02, y: -4 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={`
       relative group overflow-hidden rounded-[2.5rem] border theme-transition glass

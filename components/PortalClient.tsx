@@ -253,6 +253,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       </nav>
 
       <main className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
         
         {/* Header Section */}
         <header className="mb-14">
@@ -396,8 +401,10 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                 </a>
               </div>
             </section>
-          </div>
-        </div>
+               </div>
+            </div>
+         </div>
+       </motion.div>
       </main>
 
       <footer className="mt-20 border-t border-slate-200/60 bg-white/50 py-12 dark:border-slate-800/60 dark:bg-transparent">
