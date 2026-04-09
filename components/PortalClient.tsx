@@ -23,7 +23,8 @@ import {
   UploadCloud,
   FileText,
   Globe,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react'
 import { translations, Language } from '@/lib/translations'
 
