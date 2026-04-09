@@ -201,6 +201,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
         className="hidden" 
         accept=".pdf,.doc,.docx"
         onChange={handleFileChange}
+        disabled={isUploading || !isOnline}
       />
     </div>
   )
