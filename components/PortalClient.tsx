@@ -26,6 +26,25 @@ import {
 } from 'lucide-react'
 import { translations, Language } from '@/lib/translations'
 
+const Vinyl = ({ size = 24, className = "" }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+    <path d="M12 12h.01" />
+  </svg>
+)
+
 import { ProgressBar } from './ProgressBar'
 import { DocumentCard } from './DocumentCard'
 
@@ -154,7 +173,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen theme-transition bg-[rgb(var(--background))] text-[rgb(var(--foreground))] selection:bg-indigo-500/30">
+    <div className="min-h-screen theme-transition bg-[rgb(var(--background))] text-[rgb(var(--foreground))] selection:bg-indigo-500/30 relative overflow-x-hidden">
+      {/* Texture & Gradient layers */}
+      <div className="fixed inset-0 mesh-gradient z-0" />
+      <div className="fixed inset-0 noise-overlay z-10" />
+      
+      <div className="relative z-20 min-h-screen">
       <AnimatePresence>
         {!isOnline && (
           <motion.div 
@@ -176,8 +200,8 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       <nav className={`sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-950/80 transition-all ${!isOnline ? 'pt-8 lg:pt-8' : ''}`}>
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
-              <Music size={22} strokeWidth={2.5} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-500/30 ring-2 ring-indigo-500/20 group">
+              <Vinyl size={22} className="group-hover:rotate-180 transition-transform duration-1000" />
             </div>
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">{t.production_hub}</p>
@@ -288,9 +312,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                 </div>
               </div>
               
-              <div className="grid gap-6 sm:grid-cols-1">
+              <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-1">
                 {materialsToRender.length === 0 ? (
-                   <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-16 text-center dark:border-slate-800 dark:bg-slate-900/50">
+                   <div className="rounded-3xl border border-slate-200/60 bg-white/40 p-16 text-center dark:border-slate-800 dark:bg-slate-900/40 glass">
                       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
                          <span className="text-3xl">☕</span>
                       </div>
@@ -303,9 +327,10 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                   materialsToRender.map((m, idx) => (
                     <motion.div 
                       key={m.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.15, duration: 0.8, ease: "easeOut" }}
                     >
                       <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} lang={lang} />
                     </motion.div>
@@ -317,7 +342,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
           <div className="lg:col-span-4 space-y-8">
             {/* Show Meta Widget */}
-            <section className="group sticky top-32 rounded-[2rem] border border-slate-200/60 bg-white p-8 shadow-2xl shadow-slate-200/20 theme-transition dark:border-slate-800/60 dark:bg-slate-900/40 dark:shadow-none">
+            <section className="group sticky top-32 rounded-[2.5rem] border border-white/20 bg-white/40 p-10 shadow-2xl shadow-indigo-500/10 theme-transition dark:border-slate-800/60 dark:bg-slate-900/40 dark:shadow-none glass">
               <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400">{t.meta_baseline}</h4>
               
               <div className="space-y-8">

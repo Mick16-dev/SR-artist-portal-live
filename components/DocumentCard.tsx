@@ -17,6 +17,25 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { translations, Language } from '@/lib/translations'
 
+export const Vinyl = ({ size = 24, className = "" }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+    <path d="M12 12h.01" />
+  </svg>
+)
+
 interface DocumentCardProps {
   material: {
     id: string
@@ -86,13 +105,13 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
 
   return (
     <div className={`
-      relative group overflow-hidden rounded-[1.5rem] border theme-transition
+      relative group overflow-hidden rounded-[2.5rem] border theme-transition glass
       ${isSubmitted 
         ? 'border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10' 
         : isOverdue 
           ? 'border-rose-500/20 bg-rose-500/5 dark:bg-rose-500/10' 
-          : 'border-slate-200/60 bg-white dark:border-slate-800/60 dark:bg-slate-900/40'}
-      p-8 hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-none transition-all
+          : 'border-white/20 bg-white/40 dark:border-slate-800/60 dark:bg-slate-900/40'}
+      p-10 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all
     `}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="flex-1 space-y-3">
@@ -182,7 +201,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
                   </>
                 ) : (
                   <>
-                    <Upload size={18} className="group-hover/up:-translate-y-0.5 transition-transform" />
+                    <Vinyl size={18} className="group-hover/up:rotate-90 transition-transform duration-500" />
                     {t.transmit} {displayName.split(' ')[0]}
                   </>
                 )}
