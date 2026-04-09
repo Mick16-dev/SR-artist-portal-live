@@ -29,9 +29,10 @@ interface DocumentCardProps {
     portal_token: string
   }
   onUpload: (token: string, file: File, name: string) => Promise<boolean>
+  isOnline?: boolean
 }
 
-export function DocumentCard({ material, onUpload }: DocumentCardProps) {
+export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCardProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
@@ -158,10 +159,10 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
             <div className="w-full flex flex-col items-end gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || !isOnline}
                 className={`
                   w-full sm:w-auto group/up inline-flex items-center justify-center gap-2 rounded-[1rem] px-5 py-4 text-sm font-black uppercase tracking-widest text-white transition-all
-                  ${isOverdue ? 'bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-500/20' : 'bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-500 dark:hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'}
+                  ${!isOnline ? 'bg-slate-400 cursor-not-allowed opacity-50' : isOverdue ? 'bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-500/20' : 'bg-slate-900 dark:bg-indigo-600 hover:bg-indigo-500 dark:hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'}
                   ${isUploading ? 'cursor-not-allowed opacity-80' : ''}
                 `}
               >
@@ -169,6 +170,11 @@ export function DocumentCard({ material, onUpload }: DocumentCardProps) {
                   <>
                     <Loader2 size={18} className="animate-spin" />
                     {selectedFileName ? 'Transmitting...' : 'Loading...'}
+                  </>
+                ) : !isOnline ? (
+                  <>
+                    <XCircle size={18} />
+                    Offline
                   </>
                 ) : (
                   <>

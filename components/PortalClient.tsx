@@ -62,6 +62,7 @@ interface PortalClientProps {
 export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [isOnline, setIsOnline] = useState(true)
 
   const isPreview = token === 'preview-mode'
   const materialsToRender = isPreview ? [
@@ -73,6 +74,18 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   // When mounted on client, now we can show the UI
   useEffect(() => {
     setMounted(true)
+    setIsOnline(navigator.onLine)
+
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
   }, [])
 
   // Real-Time Production Sync
@@ -107,6 +120,10 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   }, [isComplete])
 
   const handleUpload = async (materialToken: string, file: File, name: string): Promise<boolean> => {
+    if (!isOnline) {
+      toast.error('You are currently offline. Please reconnect to upload files.')
+      return false
+    }
     try {
       const fd = new FormData()
       fd.append('token', materialToken)
@@ -126,13 +143,25 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
   return (
     <div className="min-h-screen theme-transition bg-white dark:bg-[#020617] text-slate-900 dark:text-slate-100 selection:bg-blue-500/30">
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div 
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-[100] bg-rose-600 px-4 py-2 text-center text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg"
+          >
+            ⚠️ You are currently offline. Please reconnect to upload files.
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px]" />
       </div>
 
-      <nav className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-[#020617]/80">
+      <nav className={`sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-[#020617]/80 transition-all ${!isOnline ? 'pt-8 lg:pt-8' : ''}`}>
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
           <div className="flex items-center gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
@@ -247,7 +276,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
                     >
-                      <DocumentCard material={m} onUpload={handleUpload} />
+                      <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} />
                     </motion.div>
                   ))
                 )}

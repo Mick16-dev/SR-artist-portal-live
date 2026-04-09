@@ -250,30 +250,12 @@ export default async function PortalPage({
   // If shows lookup failed, build a best-effort show model from material fields.
   const materialFallback = materials[0] || null
 
-  // Safety check with DIAGNOSTIC UI:
+  // 4. SECURITY GUARD: The 'Hacker' Redirect
+  // If we can't find a valid show or materials, don't show internal state.
   if (forceInvalidToken || (!show && materials.length === 0)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-10 text-slate-100 font-mono text-xs">
-        <div className="max-w-xl w-full space-y-4 border border-red-500/20 bg-red-500/5 p-8 rounded-2xl">
-          <p className="text-red-400 font-bold uppercase tracking-widest text-base mb-4">Diagnostic: Data Load Failed</p>
-          <pre className="bg-black/40 p-4 rounded-xl border border-white/5 overflow-auto max-h-96 whitespace-pre-wrap">
-            {JSON.stringify({
-              token: cleanToken,
-              resolvedShowId: showId,
-              supabaseError: (showById as any).error || 'None',
-              hasShowRecord: !!show,
-              materialsFound: materials.length,
-              showMatchId: (showById.data as any)?.id || 'Null'
-            }, null, 2)}
-          </pre>
-          <p className="text-slate-500 leading-relaxed pt-2">
-            The system successfully processed your token but could not find a matching record in the 'shows' table. 
-            Check if the ID exists in the 'shows' table under either 'id' or 'show_id' columns.
-          </p>
-          <div className="pt-6">
-            <InvalidToken receivedToken={cleanToken || 'none'} />
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 px-6">
+        <InvalidToken receivedToken={cleanToken || 'none'} />
       </div>
     )
   }
