@@ -241,7 +241,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             <div className="max-w-2xl">
               <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400">
                 <CheckCircle2 size={12} />
-                {t.secure_handshake}
+                {t.welcome_back} {artist?.name || t.artist_tba}{t.welcome_suffix}
               </p>
               <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
                 {artist?.name || t.artist_tba}
@@ -252,15 +252,17 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               </p>
             </div>
             
-            <div className="w-full lg:w-80 space-y-4">
+            <div className={`w-full lg:w-80 space-y-4 p-6 rounded-3xl theme-transition ${submittedCount === totalCount ? 'bg-emerald-500/5 border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
               <div className="flex items-center justify-between text-sm font-bold">
-                <span className="text-slate-600 dark:text-slate-500 uppercase tracking-widest">{t.progress}</span>
-                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{submittedCount} / {totalCount} {t.files}</span>
+                <span className={`${submittedCount === totalCount ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-500'} uppercase tracking-widest`}>
+                  {submittedCount === totalCount ? t.stage_ready : t.progress}
+                </span>
+                <span className={`${submittedCount === totalCount ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800'} px-2 py-1 rounded-md transition-colors`}>{submittedCount} / {totalCount} {t.files}</span>
               </div>
               <ProgressBar total={totalCount} submittedCount={submittedCount} lang={lang} />
               <div className="flex justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                <span>{t.pipeline}</span>
-                <span>{Math.round((submittedCount/totalCount)*100)}% {t.sync}</span>
+                <span>{submittedCount === totalCount ? t.ready_msg : t.pipeline}</span>
+                {submittedCount < totalCount && <span>{Math.round((submittedCount/totalCount)*100)}% {t.sync}</span>}
               </div>
             </div>
           </motion.div>

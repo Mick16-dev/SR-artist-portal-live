@@ -49,7 +49,11 @@ export const translations = {
     offline_error: 'You are currently offline. Please reconnect to upload files.',
     trans_failed: 'Transmission failed.',
     tba: 'TBA',
-    artist_tba: 'Artist TBA'
+    artist_tba: 'Artist TBA',
+    welcome_back: 'Hey',
+    welcome_suffix: ', welcome back!',
+    stage_ready: 'Stage Ready',
+    ready_msg: "Everything's in. You're set for the show!"
   },
   de: {
     portal_title: 'Künstlerportal',
@@ -99,6 +103,10 @@ export const translations = {
     offline_error: 'Sie sind derzeit offline. Bitte verbinden Sie sich erneut, um Dateien hochzuladen.',
     trans_failed: 'Übertragung fehlgeschlagen.',
     tba: 'Noch nicht bekannt',
-    artist_tba: 'Künstler noch nicht bekannt'
+    artist_tba: 'Künstler noch nicht bekannt',
+    welcome_back: 'Hey',
+    welcome_suffix: ', schön dass du wieder da bist!',
+    stage_ready: 'Bühne bereit',
+    ready_msg: 'Alles erledigt. Du bist bereit für die Show!'
   }
 }
