@@ -254,11 +254,10 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
       <main className="mx-auto max-w-7xl px-6 py-12 lg:px-10">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-        
         {/* Header Section */}
         <header className="mb-14">
           <motion.div 
@@ -399,10 +398,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                    </div>
                    <ChevronRight size={14} className="text-slate-400 group-hover/email:translate-x-1 transition-transform" />
                 </a>
-               </div>
-            </div>
-         </div>
-       </motion.div>
+              </div>
+            </section>
+          </div>
+        </div>
+        </motion.div>
       </main>
 
       <footer className="mt-20 border-t border-slate-200/60 bg-white/50 py-12 dark:border-slate-800/60 dark:bg-transparent">
