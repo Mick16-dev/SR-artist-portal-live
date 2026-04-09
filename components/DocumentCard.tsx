@@ -104,14 +104,17 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
   }
 
   return (
-    <div className={`
+    <motion.div 
+      whileHover={{ scale: 1.02, y: -5 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className={`
       relative group overflow-hidden rounded-[2.5rem] border theme-transition glass
       ${isSubmitted 
         ? 'border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10' 
         : isOverdue 
           ? 'border-rose-500/20 bg-rose-500/5 dark:bg-rose-500/10' 
           : 'border-white/20 bg-white/40 dark:border-slate-800/60 dark:bg-slate-900/40'}
-      p-10 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all
+      p-10 hover:shadow-[0_20px_50px_rgba(79,70,229,0.15)] transition-all
     `}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="flex-1 space-y-3">
@@ -222,6 +225,6 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
         onChange={handleFileChange}
         disabled={isUploading || !isOnline}
       />
-    </div>
+    </motion.div>
   )
 }

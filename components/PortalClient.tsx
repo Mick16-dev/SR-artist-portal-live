@@ -205,7 +205,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             </div>
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">{t.production_hub}</p>
-              <h2 className="text-xl font-bold tracking-tight">{t.portal_title}</h2>
+              <h2 className="text-xl font-bold tracking-tight font-heading">{t.portal_title}</h2>
             </div>
           </div>
           
@@ -267,7 +267,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                 <CheckCircle2 size={12} />
                 {t.welcome_back} {artist?.name || t.artist_tba}{t.welcome_suffix}
               </p>
-              <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
+              <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl font-heading">
                 {artist?.name || t.artist_tba}
               </h1>
               <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-slate-600 dark:text-slate-400">
@@ -298,7 +298,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
           <div className="lg:col-span-8 space-y-10">
             <section>
               <div className="mb-8 flex items-center justify-between border-b border-slate-200/60 pb-4 dark:border-slate-800/60">
-                <h3 className="text-xl font-bold flex items-center gap-3">
+                <h3 className="text-xl font-bold flex items-center gap-3 font-heading">
                   <FileText className="text-indigo-500" size={24} />
                   {t.required_assets}
                 </h3>
@@ -330,7 +330,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                       initial={{ opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: idx * 0.15, duration: 0.8, ease: "easeOut" }}
+                      transition={{ delay: idx * 0.1, duration: 0.8, ease: "easeOut" }}
                     >
                       <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} lang={lang} />
                     </motion.div>
@@ -343,7 +343,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
           <div className="lg:col-span-4 space-y-8">
             {/* Show Meta Widget */}
             <section className="group sticky top-32 rounded-[2.5rem] border border-white/20 bg-white/40 p-10 shadow-2xl shadow-indigo-500/10 theme-transition dark:border-slate-800/60 dark:bg-slate-900/40 dark:shadow-none glass">
-              <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400">{t.meta_baseline}</h4>
+              <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400 font-heading">{t.meta_baseline}</h4>
               
               <div className="space-y-8">
                 <div className="flex gap-4 items-start">
