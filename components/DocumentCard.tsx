@@ -15,8 +15,9 @@ import {
   XCircle,
   FileCheck2,
   ChevronRight,
-  Sparkles,
-  FileDigit
+  Star,
+  FileDigit,
+  Layers
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { translations, Language } from '@/lib/translations'
@@ -84,10 +85,10 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Icon Mapping
+  // Icon Mapping - Professional SaaS style, no "AI" sparkles
   const getIcon = () => {
     const name = material.item_name.toLowerCase()
-    if (name.includes('epk')) return <Sparkles className="text-indigo-500" size={24} />
+    if (name.includes('epk')) return <Star className="text-indigo-400" size={24} />
     if (name.includes('press photo') || name.includes('photos')) return <Camera className="text-blue-500" size={24} />
     if (name.includes('bio') || name.includes('biography')) return <User className="text-emerald-500" size={24} />
     if (name.includes('rider') || name.includes('technical')) return <Sliders className="text-purple-500" size={24} />
@@ -102,30 +103,30 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
       className={`
       relative group overflow-hidden rounded-3xl border theme-transition glass
       ${isSubmitted 
-        ? 'border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10' 
+        ? 'border-emerald-500/20 bg-emerald-500/5' 
         : isOverdue 
           ? 'border-rose-500/30 bg-rose-500/10 border-l-4 border-l-rose-500' 
           : isUrgent
-            ? 'border-coral-500/30 bg-orange-500/5 border-l-4 border-l-orange-500'
+            ? 'border-orange-500/30 bg-orange-500/5 border-l-4 border-l-orange-500'
             : isWarning
               ? 'border-amber-500/30 bg-amber-500/5 border-l-4 border-l-amber-500'
-              : 'border-white/10 bg-white/5 dark:border-slate-800/40 dark:bg-slate-900/20'}
+              : 'border-white/5 bg-white/5 dark:border-white/5'}
       p-8 hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] transition-all
     `}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-start gap-6">
-           <div className={`p-4 rounded-2xl bg-white/10 dark:bg-slate-800/60 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
+           <div className={`p-4 rounded-2xl bg-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
               {getIcon()}
            </div>
            <div className="space-y-1">
-             <h3 className="text-lg font-bold tracking-tight">{material.item_name}</h3>
-             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-md">
+             <h3 className="text-lg font-bold tracking-tight text-white">{material.item_name}</h3>
+             <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-md">
                {material.description || t.file_types}
              </p>
              <div className="flex items-center gap-4 pt-2">
-                <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-rose-500' : isUrgent ? 'text-orange-500 font-bold' : isWarning ? 'text-amber-500' : 'text-slate-500'}`}>
+                <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-rose-500' : isUrgent ? 'text-orange-500' : isWarning ? 'text-amber-500' : 'text-slate-500'}`}>
                   {isSubmitted ? (
-                    <span className="flex items-center gap-1.5 text-emerald-500">
+                    <span className="flex items-center gap-1.5 text-emerald-400">
                       <FileCheck2 size={12} />
                       {t.submitted} {material.submitted_at && `• ${format(new Date(material.submitted_at), 'MMM d')}`}
                     </span>
@@ -148,10 +149,10 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
               className={`
                 group/btn relative flex h-12 items-center gap-3 rounded-2xl px-6 text-xs font-black uppercase tracking-[0.15em] transition-all
                 ${isSubmitted 
-                  ? 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-white' 
+                  ? 'border border-white/10 bg-white/5 text-white hover:bg-white/10' 
                   : isUrgent
-                    ? 'bg-orange-600 text-white shadow-[0_10px_20px_rgba(234,88,12,0.3)] hover:bg-orange-500 hover:shadow-[0_15px_25px_rgba(234,88,12,0.4)]'
-                    : 'bg-indigo-600 text-white shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-500 hover:shadow-[0_15px_25px_rgba(79,70,229,0.4)]'}
+                    ? 'bg-orange-600 text-white shadow-[0_10px_20px_rgba(234,88,12,0.3)] hover:bg-orange-500'
+                    : 'bg-indigo-600 text-white shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-500'}
                 disabled:opacity-40 disabled:cursor-not-allowed
               `}
             >
@@ -170,7 +171,7 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || !isOnline}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition-all hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600 dark:hover:text-indigo-400"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-500 transition-all hover:bg-white/10 hover:text-indigo-400"
               title={t.overwrite}
             >
               <RotateCcw size={18} />

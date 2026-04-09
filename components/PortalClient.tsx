@@ -23,7 +23,7 @@ import {
   UploadCloud,
   FileText,
   Globe,
-  Zap,
+  Activity,
   Loader2
 } from 'lucide-react'
 import { translations, Language } from '@/lib/translations'
@@ -176,7 +176,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             </div>
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-400">{t.production_hub}</p>
-              <h2 className="text-xl font-bold tracking-tight font-heading">{t.portal_title}</h2>
+              <h2 className="text-xl font-bold tracking-tight font-heading text-white">{t.portal_title}</h2>
             </div>
           </div>
           
@@ -215,9 +215,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     initial={{ scale: 0.9, opacity: 0 }} 
                     animate={{ scale: 1, opacity: 1 }} 
                     transition={{ delay: 0.4 }}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider ${daysToNext <= 7 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-slate-800 text-slate-300'}`}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider ${daysToNext <= 7 ? 'bg-orange-600/20 text-orange-400' : 'bg-slate-800 text-slate-400'}`}
                   >
-                    <Zap size={12} fill="currentColor" />
+                    <Activity size={12} />
                     <span>Next deadline in {daysToNext} days — {nextDeadlineMaterial?.item_name}</span>
                   </motion.div>
                 )}
@@ -225,9 +225,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               
               <h1 className="text-6xl font-black tracking-tighter text-white lg:text-7xl font-heading leading-tight">
                 {artist?.name || (
-                   <span className="opacity-20 flex flex-col gap-2">
+                   <span className="opacity-20 flex flex-col gap-4">
                      <div className="h-16 w-3/4 skeleton-line rounded-xl" />
-                     <span className="text-xl font-medium tracking-normal text-slate-500">Artist Assignment Pending</span>
+                     <span className="text-xl font-medium tracking-normal text-slate-500 italic">Artist Assignment Pending</span>
                    </span>
                 )}
               </h1>
@@ -296,9 +296,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     {show?.venue_name ? (
                        <p className="text-lg font-bold leading-tight text-white">{show.venue_name}, {show.city}</p>
                     ) : (
-                       <div className="space-y-2">
+                       <div className="space-y-3">
                          <div className="w-32 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium">Confirmed once contract is signed</p>
+                         <p className="text-[11px] text-slate-600 font-medium italic">Confirmed once contract is signed</p>
                        </div>
                     )}
                   </div>
@@ -313,9 +313,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     {show?.show_date ? (
                        <p className="text-lg font-bold text-white">{format(new Date(show.show_date), 'EEEE, MMM d yyyy')}</p>
                     ) : (
-                       <div className="space-y-2">
+                       <div className="space-y-3">
                          <div className="w-40 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium">Set after venue confirms date</p>
+                         <p className="text-[11px] text-slate-600 font-medium italic">Set after venue confirms date</p>
                        </div>
                     )}
                   </div>
@@ -330,9 +330,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     {show?.show_time ? (
                        <p className="text-lg font-bold text-white">{show.show_time}</p>
                     ) : (
-                       <div className="space-y-2">
+                       <div className="space-y-3">
                          <div className="w-24 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium">Final schedule pending</p>
+                         <p className="text-[11px] text-slate-600 font-medium italic">Final schedule pending</p>
                        </div>
                     )}
                   </div>
