@@ -399,8 +399,6 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                    </div>
                    <ChevronRight size={14} className="text-slate-400 group-hover/email:translate-x-1 transition-transform" />
                 </a>
-              </div>
-            </section>
                </div>
             </div>
          </div>
