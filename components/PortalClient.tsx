@@ -246,7 +246,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
                 {artist?.name || t.artist_tba}
               </h1>
-              <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-slate-600 dark:text-slate-400">
                 {t.gateway_desc} <span className="text-slate-900 dark:text-slate-200">{show?.venue_name}</span>. 
                 {t.deadline_inst}
               </p>
@@ -254,11 +254,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             
             <div className="w-full lg:w-80 space-y-4">
               <div className="flex items-center justify-between text-sm font-bold">
-                <span className="text-slate-500 uppercase tracking-widest">{t.progress}</span>
+                <span className="text-slate-600 dark:text-slate-500 uppercase tracking-widest">{t.progress}</span>
                 <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{submittedCount} / {totalCount} {t.files}</span>
               </div>
               <ProgressBar total={totalCount} submittedCount={submittedCount} lang={lang} />
-              <div className="flex justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <div className="flex justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                 <span>{t.pipeline}</span>
                 <span>{Math.round((submittedCount/totalCount)*100)}% {t.sync}</span>
               </div>
@@ -324,37 +324,37 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.venue} & Location</span>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">{t.venue} & Location</span>
                     <p className="text-base font-bold leading-tight">{show?.venue_name || t.tba}, {show?.city || t.tba}</p>
                   </div>
                 </div>
 
                 <div className="flex gap-4 items-start">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-slate-800 group-hover:text-amber-500 transition-colors">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 dark:text-slate-400 dark:bg-slate-800 group-hover:text-amber-500 transition-colors shadow-sm">
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.pipeline} Date</span>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">{t.pipeline} Date</span>
                     <p className="text-base font-bold">{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMM d yyyy') : t.tba}</p>
                   </div>
                 </div>
 
                 <div className="flex gap-4 items-start">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-slate-800 group-hover:text-emerald-500 transition-colors">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 dark:text-slate-400 dark:bg-slate-800 group-hover:text-emerald-500 transition-colors shadow-sm">
                     <Clock size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.curtain_call}</span>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">{t.curtain_call}</span>
                     <p className="text-base font-bold">{show?.show_time || t.tba}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-10 border-t border-slate-100 pt-8 dark:border-slate-800">
-                <h5 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t.venue_liaison}</h5>
+                <h5 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">{t.venue_liaison}</h5>
                 <a 
                   href={`mailto:${show.promoter_email}`}
-                  className="flex items-center justify-between group/email rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800"
+                  className="flex items-center justify-between group/email rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800 shadow-sm"
                 >
                    <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 group-hover/email:scale-110 transition-transform">
@@ -362,10 +362,10 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                       </div>
                       <div>
                         <p className="text-sm font-bold leading-none">{show?.promoter_name || t.production_lead}</p>
-                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{show?.promoter_email}</p>
+                        <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400 font-medium">{show?.promoter_email}</p>
                       </div>
                    </div>
-                   <ChevronRight size={14} className="text-slate-300 group-hover/email:translate-x-1 transition-transform" />
+                   <ChevronRight size={14} className="text-slate-400 group-hover/email:translate-x-1 transition-transform" />
                 </a>
               </div>
             </section>

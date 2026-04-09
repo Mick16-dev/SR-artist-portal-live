@@ -109,7 +109,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
           </div>
           
           {material.description && (
-            <p className="text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400 max-w-lg">
+            <p className="text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400 max-w-lg">
               {material.description}
             </p>
           )}
@@ -121,7 +121,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
                 ? 'border-emerald-500/20 text-emerald-600 bg-emerald-500/5' 
                 : isOverdue 
                   ? 'border-rose-500/20 text-rose-600 bg-rose-500/5' 
-                  : 'border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50 dark:bg-slate-800/40'}
+                  : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40'}
             `}>
               {isSubmitted 
                 ? `${t.submitted} ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM d') : t.recently}` 
@@ -129,7 +129,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
             </span>
             
             {!isSubmitted && (
-              <span className={isOverdue ? 'text-rose-500' : isDeadlineToday ? 'text-amber-500' : 'text-slate-400'}>
+              <span className={isOverdue ? 'text-rose-500' : isDeadlineToday ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}>
                 {isDeadlineToday ? t.due_today : isOverdue ? `${daysDiff} ${t.days_overdue}` : `${daysDiff} ${t.days_remaining}`}
               </span>
             )}
@@ -153,7 +153,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isOnline}
-                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 text-slate-400 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-4 py-3 text-sm font-bold transition-all ${!isOnline ? 'cursor-not-allowed opacity-50' : ''}`}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 text-slate-500 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-4 py-3 text-sm font-bold transition-all ${!isOnline ? 'cursor-not-allowed opacity-50' : ''}`}
               >
                 <RotateCcw size={16} />
                 {t.overwrite}
@@ -187,7 +187,7 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
                   </>
                 )}
               </button>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                 {!isOnline ? t.offline_status : t.file_types}
               </p>
             </div>
