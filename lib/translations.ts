@@ -34,7 +34,22 @@ export const translations = {
     transmitting: 'Transmitting...',
     loading: 'Loading...',
     handshake_complete: 'Handshake Complete',
-    assets_submitted: 'All mandatory assets submitted'
+    assets_submitted: 'All mandatory assets submitted',
+    gateway_desc: 'Your dedicated production gateway for',
+    deadline_inst: 'Please transmit all mandatory assets before the deadline.',
+    curtain_call: 'Curtain Call',
+    production_lead: 'Production Lead',
+    submitted: 'Submitted',
+    recently: 'Recently',
+    ago: 'ago',
+    days_overdue: 'Days Overdue',
+    days_remaining: 'Days Remaining',
+    upload_success: 'recorded successfully',
+    upload_error: 'Upload failed for',
+    offline_error: 'You are currently offline. Please reconnect to upload files.',
+    trans_failed: 'Transmission failed.',
+    tba: 'TBA',
+    artist_tba: 'Artist TBA'
   },
   de: {
     portal_title: 'Künstlerportal',
@@ -69,6 +84,21 @@ export const translations = {
     transmitting: 'Wird übertragen...',
     loading: 'Wird geladen...',
     handshake_complete: 'Handshake abgeschlossen',
-    assets_submitted: 'Alle erforderlichen Assets eingereicht'
+    assets_submitted: 'Alle erforderlichen Assets eingereicht',
+    gateway_desc: 'Ihr dediziertes Produktions-Gateway für',
+    deadline_inst: 'Bitte übermitteln Sie alle obligatorischen Unterlagen vor Ablauf der Frist.',
+    curtain_call: 'Beginn',
+    production_lead: 'Produktionsleitung',
+    submitted: 'Eingereicht',
+    recently: 'vor kurzem',
+    ago: 'vor',
+    days_overdue: 'Tage überfällig',
+    days_remaining: 'Tage verbleibend',
+    upload_success: 'erfolgreich aufgezeichnet',
+    upload_error: 'Upload fehlgeschlagen für',
+    offline_error: 'Sie sind derzeit offline. Bitte verbinden Sie sich erneut, um Dateien hochzuladen.',
+    trans_failed: 'Übertragung fehlgeschlagen.',
+    tba: 'Noch nicht bekannt',
+    artist_tba: 'Künstler noch nicht bekannt'
   }
 }

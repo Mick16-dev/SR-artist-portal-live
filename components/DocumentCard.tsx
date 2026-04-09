@@ -71,14 +71,12 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
 
       const success = await onUpload(material.portal_token, file, displayName)
       if (success) {
-        toast.success(`${t.view_asset}! ${displayName} recorded.`) // Note: view_asset might be a bit weird here, let's just use Success as it was
-        // Re-using old logic but with translated name
-        toast.success(`Success! ${displayName} recorded.`, { id: toastId })
+        toast.success(`${t.view_asset}! ${displayName} ${t.upload_success}.`, { id: toastId })
       } else {
         throw new Error('Upload failed')
       }
     } catch (error) {
-      toast.error(`Upload failed for ${displayName}.`, { id: toastId })
+      toast.error(`${t.upload_error} ${displayName}.`, { id: toastId })
     } finally {
       setIsUploading(false)
       setSelectedFileName(null)
@@ -126,13 +124,13 @@ export function DocumentCard({ material, onUpload, isOnline = true, lang }: Docu
                   : 'border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50 dark:bg-slate-800/40'}
             `}>
               {isSubmitted 
-                ? `${t.view_asset === 'Asset ansehen' ? 'Eingereicht' : 'Submitted'} ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM d') : 'Recently'}` 
+                ? `${t.submitted} ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM d') : t.recently}` 
                 : `${t.deadline}: ${format(deadlineDate, 'MMM d')}`}
             </span>
             
             {!isSubmitted && (
               <span className={isOverdue ? 'text-rose-500' : isDeadlineToday ? 'text-amber-500' : 'text-slate-400'}>
-                {isDeadlineToday ? t.due_today : isOverdue ? `${daysDiff} ${t.overdue}` : `${daysDiff} ${t.remaining}`}
+                {isDeadlineToday ? t.due_today : isOverdue ? `${daysDiff} ${t.days_overdue}` : `${daysDiff} ${t.days_remaining}`}
               </span>
             )}
           </div>

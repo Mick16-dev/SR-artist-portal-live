@@ -129,7 +129,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
 
   const handleUpload = async (materialToken: string, file: File, name: string): Promise<boolean> => {
     if (!isOnline) {
-      toast.error('You are currently offline. Please reconnect to upload files.')
+      toast.error(t.offline_error)
       return false
     }
     try {
@@ -139,13 +139,17 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       fd.append('file', file)
       const res = await fetch(process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK!, { method: 'POST', body: fd })
       if (!res.ok) throw new Error()
-      toast.success(`${name} transmitted successfully.`)
+      toast.success(`${name} ${t.upload_success}.`)
       return true
     } catch {
-      toast.error('Transmission failed.')
+      toast.error(t.trans_failed)
       return false
     }
   }
+
+  useEffect(() => {
+    document.title = `${t.portal_title} | ${artist?.name || t.artist_tba}`
+  }, [lang, artist, t.portal_title, t.artist_tba])
 
   if (!mounted) return null
 
@@ -218,7 +222,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             <div className="hidden lg:block h-10 w-px bg-slate-200/60 dark:bg-slate-800/60" />
             <div className="hidden sm:block text-right">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{t.venue}</p>
-              <p className="max-w-[200px] truncate text-sm font-bold">{show?.venue_name || 'TBA'}</p>
+              <p className="max-w-[200px] truncate text-sm font-bold">{show?.venue_name || t.tba}</p>
             </div>
           </div>
         </div>
@@ -240,11 +244,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                 {t.secure_handshake}
               </p>
               <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
-                {artist?.name || 'Artist TBA'}
+                {artist?.name || t.artist_tba}
               </h1>
               <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-                Your dedicated production gateway for <span className="text-slate-900 dark:text-slate-200">{show?.venue_name}</span>. 
-                Please transmit all mandatory assets before the deadline.
+                {t.gateway_desc} <span className="text-slate-900 dark:text-slate-200">{show?.venue_name}</span>. 
+                {t.deadline_inst}
               </p>
             </div>
             
@@ -321,7 +325,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                   </div>
                   <div>
                     <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.venue} & Location</span>
-                    <p className="text-base font-bold leading-tight">{show?.venue_name || 'TBA'}, {show?.city || 'TBA'}</p>
+                    <p className="text-base font-bold leading-tight">{show?.venue_name || t.tba}, {show?.city || t.tba}</p>
                   </div>
                 </div>
 
@@ -331,7 +335,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                   </div>
                   <div>
                     <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.pipeline} Date</span>
-                    <p className="text-base font-bold">{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMM d yyyy') : 'TBA'}</p>
+                    <p className="text-base font-bold">{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMM d yyyy') : t.tba}</p>
                   </div>
                 </div>
 
@@ -340,8 +344,8 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     <Clock size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Curtain Call</span>
-                    <p className="text-base font-bold">{show?.show_time || 'TBA'}</p>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.curtain_call}</span>
+                    <p className="text-base font-bold">{show?.show_time || t.tba}</p>
                   </div>
                 </div>
               </div>
@@ -357,7 +361,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                         <Mail size={16} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold leading-none">{show?.promoter_name || 'Production Lead'}</p>
+                        <p className="text-sm font-bold leading-none">{show?.promoter_name || t.production_lead}</p>
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{show?.promoter_email}</p>
                       </div>
                    </div>
