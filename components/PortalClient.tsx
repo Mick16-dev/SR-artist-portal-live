@@ -6,6 +6,7 @@ import { differenceInDays, format, isPast, isToday } from 'date-fns'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from 'next-themes'
 import { 
   Music, 
   MapPin, 
@@ -59,8 +60,8 @@ interface PortalClientProps {
 }
 
 export function PortalClient({ show, artist, materials: initialMaterials, token, showId }: PortalClientProps) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [isLoaded, setIsLoaded] = useState(false)
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   const isPreview = token === 'preview-mode'
   const materialsToRender = isPreview ? [
@@ -69,22 +70,14 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     { id: '3', item_name: 'Hospitality Specification', description: 'Catering and green room requirements.', status: 'pending', deadline: '2026-05-01', portal_token: 'p3' },
   ] as Material[] : initialMaterials
 
+  // When mounted on client, now we can show the UI
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem('artist-portal-theme') as 'light' | 'dark'
-    if (storedTheme) setTheme(storedTheme)
-    setIsLoaded(true)
+    setMounted(true)
   }, [])
-
-  useEffect(() => {
-    if (isLoaded) {
-      document.documentElement.classList.toggle('dark', theme === 'dark')
-      window.localStorage.setItem('artist-portal-theme', theme)
-    }
-  }, [theme, isLoaded])
 
   // Real-Time Production Sync
   useEffect(() => {
-    if (isPreview || !isLoaded) return
+    if (isPreview || !mounted) return
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -99,7 +92,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [showId, isPreview, isLoaded])
+  }, [showId, isPreview, mounted])
 
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
@@ -129,7 +122,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     }
   }
 
-  if (!isLoaded) return null
+  if (!mounted) return null
 
   return (
     <div className="min-h-screen theme-transition bg-white dark:bg-[#020617] text-slate-900 dark:text-slate-100 selection:bg-blue-500/30">
@@ -153,11 +146,11 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
           
           <div className="flex items-center gap-6">
              <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
               className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/60 bg-white/50 text-slate-600 transition-all hover:bg-slate-50 dark:border-slate-800/60 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800"
             >
               <AnimatePresence mode="wait">
-                {theme === 'dark' ? (
+                {resolvedTheme === 'dark' ? (
                   <motion.div key="moon" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
                     <Moon size={18} />
                   </motion.div>
