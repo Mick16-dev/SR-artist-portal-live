@@ -21,8 +21,10 @@ import {
   Info,
   ExternalLink,
   UploadCloud,
-  FileText
+  FileText,
+  Globe
 } from 'lucide-react'
+import { translations, Language } from '@/lib/translations'
 
 import { ProgressBar } from './ProgressBar'
 import { DocumentCard } from './DocumentCard'
@@ -63,6 +65,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
+  const [lang, setLang] = useState<Language>('en')
+
+  const t = translations[lang]
 
   const isPreview = token === 'preview-mode'
   const materialsToRender = isPreview ? [
@@ -75,6 +80,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   useEffect(() => {
     setMounted(true)
     setIsOnline(navigator.onLine)
+    
+    const storedLang = window.localStorage.getItem('artist-portal-lang') as Language
+    if (storedLang === 'en' || storedLang === 'de') setLang(storedLang)
 
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
@@ -151,7 +159,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             exit={{ y: -50, opacity: 0 }}
             className="fixed top-0 left-0 right-0 z-[100] bg-rose-600 px-4 py-2 text-center text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg"
           >
-            ⚠️ You are currently offline. Please reconnect to upload files.
+            {t.offline_banner}
           </motion.div>
         )}
       </AnimatePresence>
@@ -168,8 +176,8 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               <Music size={22} strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Production Hub</p>
-              <h2 className="text-xl font-bold tracking-tight">Artist Portal</h2>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">{t.production_hub}</p>
+              <h2 className="text-xl font-bold tracking-tight">{t.portal_title}</h2>
             </div>
           </div>
           
@@ -190,9 +198,26 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                 )}
               </AnimatePresence>
             </button>
+            <div className="h-10 w-px bg-slate-200/60 dark:bg-slate-800/60" />
+            
+            <div className="flex items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-1 gap-1 border border-slate-200/60 dark:border-slate-800/60">
+              <button 
+                onClick={() => { setLang('en'); window.localStorage.setItem('artist-portal-lang', 'en'); }}
+                className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${lang === 'en' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => { setLang('de'); window.localStorage.setItem('artist-portal-lang', 'de'); }}
+                className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${lang === 'de' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                DE
+              </button>
+            </div>
+
             <div className="hidden lg:block h-10 w-px bg-slate-200/60 dark:bg-slate-800/60" />
             <div className="hidden sm:block text-right">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Venue</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{t.venue}</p>
               <p className="max-w-[200px] truncate text-sm font-bold">{show?.venue_name || 'TBA'}</p>
             </div>
           </div>
@@ -212,7 +237,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             <div className="max-w-2xl">
               <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400">
                 <CheckCircle2 size={12} />
-                Secure Handshake Live
+                {t.secure_handshake}
               </p>
               <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white lg:text-6xl">
                 {artist?.name || 'Artist TBA'}
@@ -225,13 +250,13 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             
             <div className="w-full lg:w-80 space-y-4">
               <div className="flex items-center justify-between text-sm font-bold">
-                <span className="text-slate-500 uppercase tracking-widest">Progress</span>
-                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{submittedCount} / {totalCount} Files</span>
+                <span className="text-slate-500 uppercase tracking-widest">{t.progress}</span>
+                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{submittedCount} / {totalCount} {t.files}</span>
               </div>
-              <ProgressBar total={totalCount} submittedCount={submittedCount} />
+              <ProgressBar total={totalCount} submittedCount={submittedCount} lang={lang} />
               <div className="flex justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                <span>Production Pipeline</span>
-                <span>{Math.round((submittedCount/totalCount)*100)}% Sync</span>
+                <span>{t.pipeline}</span>
+                <span>{Math.round((submittedCount/totalCount)*100)}% {t.sync}</span>
               </div>
             </div>
           </motion.div>
@@ -245,13 +270,13 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               <div className="mb-8 flex items-center justify-between border-b border-slate-200/60 pb-4 dark:border-slate-800/60">
                 <h3 className="text-xl font-bold flex items-center gap-3">
                   <FileText className="text-indigo-500" size={24} />
-                  Required Production Assets
+                  {t.required_assets}
                 </h3>
                 <div className="flex gap-2">
                    {overdueCount > 0 && (
                      <span className="flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
                        <AlertCircle size={14} />
-                       {overdueCount} Overdue
+                       {overdueCount} {t.overdue}
                      </span>
                    )}
                 </div>
@@ -263,9 +288,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
                          <span className="text-3xl">☕</span>
                       </div>
-                      <h4 className="text-xl font-bold">Awaiting Configuration</h4>
+                      <h4 className="text-xl font-bold">{t.awaiting_config}</h4>
                       <p className="mx-auto mt-3 max-w-xs text-sm text-slate-500 leading-relaxed">
-                         The production team hasn't assigned any mandatory materials to your portal yet.
+                         {t.awaiting_config_desc}
                       </p>
                    </div>
                 ) : (
@@ -276,7 +301,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
                     >
-                      <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} />
+                      <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} lang={lang} />
                     </motion.div>
                   ))
                 )}
@@ -287,7 +312,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
           <div className="lg:col-span-4 space-y-8">
             {/* Show Meta Widget */}
             <section className="group sticky top-32 rounded-[2rem] border border-slate-200/60 bg-white p-8 shadow-2xl shadow-slate-200/20 theme-transition dark:border-slate-800/60 dark:bg-slate-900/40 dark:shadow-none">
-              <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400">Metadata Baseline</h4>
+              <h4 className="mb-8 text-xs font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400">{t.meta_baseline}</h4>
               
               <div className="space-y-8">
                 <div className="flex gap-4 items-start">
@@ -295,7 +320,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Venue & Location</span>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.venue} & Location</span>
                     <p className="text-base font-bold leading-tight">{show?.venue_name || 'TBA'}, {show?.city || 'TBA'}</p>
                   </div>
                 </div>
@@ -305,7 +330,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Production Date</span>
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t.pipeline} Date</span>
                     <p className="text-base font-bold">{show?.show_date ? format(new Date(show.show_date), 'EEEE, MMM d yyyy') : 'TBA'}</p>
                   </div>
                 </div>
@@ -322,7 +347,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               </div>
 
               <div className="mt-10 border-t border-slate-100 pt-8 dark:border-slate-800">
-                <h5 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Promoter Liaison</h5>
+                <h5 className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t.venue_liaison}</h5>
                 <a 
                   href={`mailto:${show.promoter_email}`}
                   className="flex items-center justify-between group/email rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800"
@@ -352,9 +377,9 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">© 2026 PS-promotion</p>
               </div>
               <div className="flex gap-8 text-xs font-bold text-slate-400 uppercase tracking-tight">
-                <a href="#" className="hover:text-indigo-500 transition-colors">Privacy Protocol</a>
-                <a href="#" className="hover:text-indigo-500 transition-colors">Security Standars</a>
-                <a href="#" className="hover:text-indigo-500 transition-colors">Contact Support</a>
+                <a href="#" className="hover:text-indigo-500 transition-colors">{t.privacy}</a>
+                <a href="#" className="hover:text-indigo-500 transition-colors">{t.security}</a>
+                <a href="#" className="hover:text-indigo-500 transition-colors">{t.support}</a>
               </div>
             </div>
          </div>

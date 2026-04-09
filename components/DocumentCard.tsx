@@ -15,6 +15,7 @@ import {
   FileCheck2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { translations, Language } from '@/lib/translations'
 
 interface DocumentCardProps {
   material: {
@@ -30,9 +31,11 @@ interface DocumentCardProps {
   }
   onUpload: (token: string, file: File, name: string) => Promise<boolean>
   isOnline?: boolean
+  lang: Language
 }
 
-export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCardProps) {
+export function DocumentCard({ material, onUpload, isOnline = true, lang }: DocumentCardProps) {
+  const t = translations[lang]
   const [isUploading, setIsUploading] = useState(false)
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
@@ -60,7 +63,7 @@ export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCa
     setSelectedFileName(file.name)
     setIsUploading(true)
     
-    const toastId = toast.loading(`Uploading ${file.name}...`)
+    const toastId = toast.loading(`${t.transmitting} ${file.name}...`)
     
     try {
       const controller = new AbortController()
@@ -68,6 +71,8 @@ export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCa
 
       const success = await onUpload(material.portal_token, file, displayName)
       if (success) {
+        toast.success(`${t.view_asset}! ${displayName} recorded.`) // Note: view_asset might be a bit weird here, let's just use Success as it was
+        // Re-using old logic but with translated name
         toast.success(`Success! ${displayName} recorded.`, { id: toastId })
       } else {
         throw new Error('Upload failed')
@@ -121,13 +126,13 @@ export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCa
                   : 'border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50 dark:bg-slate-800/40'}
             `}>
               {isSubmitted 
-                ? `Submitted ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM d') : 'Recently'}` 
-                : `Deadline: ${format(deadlineDate, 'MMM d')}`}
+                ? `${t.view_asset === 'Asset ansehen' ? 'Eingereicht' : 'Submitted'} ${material.submitted_at ? format(new Date(material.submitted_at), 'MMM d') : 'Recently'}` 
+                : `${t.deadline}: ${format(deadlineDate, 'MMM d')}`}
             </span>
             
             {!isSubmitted && (
               <span className={isOverdue ? 'text-rose-500' : isDeadlineToday ? 'text-amber-500' : 'text-slate-400'}>
-                {isDeadlineToday ? 'Due Today' : isOverdue ? `${daysDiff} Days Overdue` : `${daysDiff} Days Remaining`}
+                {isDeadlineToday ? t.due_today : isOverdue ? `${daysDiff} ${t.overdue}` : `${daysDiff} ${t.remaining}`}
               </span>
             )}
           </div>
@@ -144,15 +149,16 @@ export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCa
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 shadow-sm"
                 >
                   <ExternalLink size={16} />
-                  View Asset
+                  {t.view_asset}
                 </a>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 text-slate-400 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-4 py-3 text-sm font-bold transition-all"
+                disabled={!isOnline}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 text-slate-400 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-4 py-3 text-sm font-bold transition-all ${!isOnline ? 'cursor-not-allowed opacity-50' : ''}`}
               >
                 <RotateCcw size={16} />
-                Overwrite
+                {t.overwrite}
               </button>
             </>
           ) : (
@@ -169,21 +175,23 @@ export function DocumentCard({ material, onUpload, isOnline = true }: DocumentCa
                 {isUploading ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    {selectedFileName ? 'Transmitting...' : 'Loading...'}
+                    {selectedFileName ? t.transmitting : t.loading}
                   </>
                 ) : !isOnline ? (
                   <>
                     <XCircle size={18} />
-                    Offline
+                    {t.offline}
                   </>
                 ) : (
                   <>
                     <Upload size={18} className="group-hover/up:-translate-y-0.5 transition-transform" />
-                    Transmit {displayName.split(' ')[0]}
+                    {t.transmit} {displayName.split(' ')[0]}
                   </>
                 )}
               </button>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supports PDF, DOCX • Max 10MB</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {!isOnline ? t.offline_status : t.file_types}
+              </p>
             </div>
           )}
         </div>

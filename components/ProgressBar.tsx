@@ -3,13 +3,16 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
+import { translations, Language } from '@/lib/translations'
 
 interface ProgressBarProps {
   total: number
   submittedCount: number
+  lang: Language
 }
 
-export function ProgressBar({ total, submittedCount }: ProgressBarProps) {
+export function ProgressBar({ total, submittedCount, lang }: ProgressBarProps) {
+  const t = translations[lang]
   const percentage = total > 0 ? Math.round((submittedCount / total) * 100) : 0
   const isComplete = total > 0 && submittedCount === total
 
@@ -24,8 +27,8 @@ export function ProgressBar({ total, submittedCount }: ProgressBarProps) {
           <Check size={20} strokeWidth={3} />
         </div>
         <div>
-          <p className="text-emerald-600 dark:text-emerald-400 font-black text-xs uppercase tracking-widest">Handshake Complete</p>
-          <p className="text-emerald-900 dark:text-emerald-100 font-bold text-sm tracking-tight pt-0.5">All mandatory assets submitted</p>
+          <p className="text-emerald-600 dark:text-emerald-400 font-black text-xs uppercase tracking-widest">{t.handshake_complete}</p>
+          <p className="text-emerald-900 dark:text-emerald-100 font-bold text-sm tracking-tight pt-0.5">{t.assets_submitted}</p>
         </div>
       </motion.div>
     )
