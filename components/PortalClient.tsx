@@ -415,6 +415,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             </div>
          </div>
       </footer>
+      </div>
     </div>
   )
 }
