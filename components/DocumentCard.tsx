@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { format, isPast, isToday, differenceInDays } from 'date-fns'
+import React, { useState, useRef } from 'react'
+import { format, differenceInDays } from 'date-fns'
 import { toast } from 'sonner'
 import { 
   FileText, 
@@ -12,40 +12,18 @@ import {
   AlertTriangle,
   RotateCcw,
   Loader2,
-  XCircle,
   FileCheck2,
   ChevronRight,
   Star,
-  FileDigit,
-  Layers
+  Download
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { translations, Language } from '@/lib/translations'
-
-const Vinyl = ({ size = 24, className = "" }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="3" />
-    <circle cx="12" cy="12" r="1" fill="currentColor" />
-    <path d="M12 12h.01" />
-  </svg>
-)
 
 interface DocumentCardProps {
   material: {
     id: string
     item_name: string
-    name?: string
     description?: string
     status: 'pending' | 'submitted'
     deadline: string
@@ -67,101 +45,86 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
   const daysToDeadline = differenceInDays(new Date(material.deadline), new Date())
   const isOverdue = daysToDeadline < 0 && !isSubmitted
   const isUrgent = daysToDeadline >= 0 && daysToDeadline <= 7 && !isSubmitted
-  const isWarning = daysToDeadline > 7 && daysToDeadline <= 14 && !isSubmitted
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     if (file.size > 10 * 1024 * 1024) {
       toast.error('File too large. Max 10MB.')
       return
     }
-
     setIsUploading(true)
     const success = await onUpload(material.portal_token, file, material.item_name)
     setIsUploading(false)
-    
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Icon Mapping - Professional SaaS style, no "AI" sparkles
   const getIcon = () => {
     const name = material.item_name.toLowerCase()
-    if (name.includes('epk')) return <Star className="text-indigo-400" size={24} />
-    if (name.includes('press photo') || name.includes('photos')) return <Camera className="text-blue-500" size={24} />
-    if (name.includes('bio') || name.includes('biography')) return <User className="text-emerald-500" size={24} />
-    if (name.includes('rider') || name.includes('technical')) return <Sliders className="text-purple-500" size={24} />
-    if (name.includes('contract') || name.includes('signed')) return <PenTool className="text-amber-500" size={24} />
-    return <FileText className="text-slate-500" size={24} />
+    if (name.includes('epk')) return <Star className="text-primary" size={20} />
+    if (name.includes('photo')) return <Camera className="text-primary" size={20} />
+    if (name.includes('bio')) return <User className="text-primary" size={20} />
+    if (name.includes('rider') || name.includes('technical')) return <Sliders className="text-primary" size={20} />
+    if (name.includes('contract')) return <PenTool className="text-primary" size={20} />
+    return <FileText className="text-[rgb(var(--muted-foreground))]" size={20} />
   }
 
   return (
-    <motion.div 
-      whileHover={{ scale: 1.01, y: -4 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`
-      relative group overflow-hidden rounded-3xl border theme-transition glass
+    <div className={`
+      relative group rounded-xl border p-6 transition-all font-sans
       ${isSubmitted 
         ? 'border-emerald-500/20 bg-emerald-500/5' 
         : isOverdue 
-          ? 'border-rose-500/30 bg-rose-500/10 border-l-4 border-l-rose-500' 
-          : isUrgent
-            ? 'border-orange-500/30 bg-orange-500/5 border-l-4 border-l-orange-500'
-            : isWarning
-              ? 'border-amber-500/30 bg-amber-500/5 border-l-4 border-l-amber-500'
-              : 'border-white/5 bg-white/5 dark:border-white/5'}
-      p-8 hover:shadow-[0_20px_50px_rgba(79,70,229,0.12)] transition-all
+          ? 'border-red-500/30 bg-red-500/5' 
+          : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] hover:border-[rgb(var(--muted))]'}
     `}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-start gap-6">
-           <div className={`p-4 rounded-2xl bg-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--secondary))] border border-[rgb(var(--border))]">
               {getIcon()}
            </div>
-           <div className="space-y-1">
-             <h3 className="text-lg font-bold tracking-tight text-white">{material.item_name}</h3>
-             <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-md">
+           <div>
+             <h3 className="text-sm font-bold tracking-tight">{material.item_name}</h3>
+             <p className="mt-1 text-xs text-[rgb(var(--muted-foreground))] font-medium leading-relaxed max-w-sm">
                {material.description || t.file_types}
              </p>
-             <div className="flex items-center gap-4 pt-2">
-                <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-rose-500' : isUrgent ? 'text-orange-500' : isWarning ? 'text-amber-500' : 'text-slate-500'}`}>
+             <div className="mt-3 flex items-center gap-3">
+                <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${isSubmitted ? 'text-emerald-500' : isOverdue ? 'text-red-500' : isUrgent ? 'text-orange-500' : 'text-[rgb(var(--muted-foreground))]'}`}>
                   {isSubmitted ? (
-                    <span className="flex items-center gap-1.5 text-emerald-400">
+                    <>
                       <FileCheck2 size={12} />
-                      {t.submitted} {material.submitted_at && `• ${format(new Date(material.submitted_at), 'MMM d')}`}
-                    </span>
+                      {t.submitted}
+                    </>
                   ) : (
                     <>
                       <AlertTriangle size={12} className={isOverdue ? 'animate-pulse' : ''} />
-                      {isOverdue ? t.overdue : isUrgent ? 'Urgent' : t.deadline}: {format(new Date(material.deadline), 'MMM d, yyyy')}
+                      {isOverdue ? t.overdue : t.deadline}: {format(new Date(material.deadline), 'PP')}
                     </>
                   )}
-                </div>
+                </span>
              </div>
            </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {(!isSubmitted || material.file_url) && (
             <button
               onClick={() => isSubmitted ? window.open(material.file_url) : fileInputRef.current?.click()}
               disabled={isUploading || (!isOnline && !isSubmitted)}
               className={`
-                group/btn relative flex h-12 items-center gap-3 rounded-2xl px-6 text-xs font-black uppercase tracking-[0.15em] transition-all
+                h-10 px-4 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2
                 ${isSubmitted 
-                  ? 'border border-white/10 bg-white/5 text-white hover:bg-white/10' 
-                  : isUrgent
-                    ? 'bg-orange-600 text-white shadow-[0_10px_20px_rgba(234,88,12,0.3)] hover:bg-orange-500'
-                    : 'bg-indigo-600 text-white shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-500'}
-                disabled:opacity-40 disabled:cursor-not-allowed
+                  ? 'bg-[rgb(var(--secondary))] text-[rgb(var(--foreground))] border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))]' 
+                  : 'bg-primary text-white hover:opacity-90 shadow-sm border border-primary/20'}
+                disabled:opacity-40
               `}
             >
               {isUploading ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={14} />
               ) : isSubmitted ? (
-                <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                <Download size={14} />
               ) : (
-                <Vinyl size={16} className="group-hover/btn:rotate-180 transition-transform duration-700" />
+                <FileText size={14} />
               )}
               <span>{isUploading ? t.transmitting : isSubmitted ? t.view_asset : t.transmit}</span>
             </button>
@@ -171,10 +134,10 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || !isOnline}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-500 transition-all hover:bg-white/10 hover:text-indigo-400"
+              className="h-10 w-10 flex items-center justify-center rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--background))] text-[rgb(var(--muted-foreground))] hover:text-primary hover:bg-[rgb(var(--secondary))] transition-colors"
               title={t.overwrite}
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={16} />
             </button>
           )}
         </div>
@@ -187,6 +150,6 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
         onChange={handleFileChange}
         disabled={isUploading || !isOnline}
       />
-    </motion.div>
+    </div>
   )
 }

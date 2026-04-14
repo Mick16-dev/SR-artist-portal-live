@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import confetti from 'canvas-confetti'
-import { differenceInDays, format, isPast, isToday, addDays } from 'date-fns'
+import { differenceInDays, format, addDays } from 'date-fns'
+import { de, enUS } from 'date-fns/locale'
 import { createClient } from '@supabase/supabase-js'
 import { Toaster, toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { 
-  Music, 
   MapPin, 
   Calendar, 
   Clock, 
@@ -16,37 +16,15 @@ import {
   Moon, 
   Sun, 
   CheckCircle2, 
-  AlertCircle, 
-  ChevronRight,
-  Info,
-  ExternalLink,
-  UploadCloud,
+  LayoutDashboard,
   FileText,
+  ChevronRight,
   Globe,
-  Activity,
-  Loader2
+  Loader2,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react'
 import { translations, Language } from '@/lib/translations'
-
-const Vinyl = ({ size = 24, className = "" }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="3" />
-    <circle cx="12" cy="12" r="1" fill="currentColor" />
-    <path d="M12 12h.01" />
-  </svg>
-)
-
 import { ProgressBar } from './ProgressBar'
 import { DocumentCard } from './DocumentCard'
 
@@ -89,6 +67,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   const [lang, setLang] = useState<Language>('en')
 
   const t = translations[lang]
+  const dateLocale = lang === 'de' ? de : enUS
 
   const isPreview = token === 'preview-mode'
   const materialsToRender = isPreview ? [
@@ -102,6 +81,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     setIsOnline(navigator.onLine)
     const storedLang = window.localStorage.getItem('artist-portal-lang') as Language
     if (storedLang === 'en' || storedLang === 'de') setLang(storedLang)
+    
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
     window.addEventListener('online', handleOnline)
@@ -125,13 +105,6 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
   const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
-  const pendingMaterials = materialsToRender.filter((m) => m.status !== 'submitted')
-  
-  // Urgency logic for Hero
-  const nextDeadlineMaterial = [...pendingMaterials].sort((a, b) => 
-    new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-  )[0]
-  const daysToNext = nextDeadlineMaterial ? differenceInDays(new Date(nextDeadlineMaterial.deadline), new Date()) : null
 
   useEffect(() => {
     if (isComplete) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
@@ -149,232 +122,176 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   }
 
   useEffect(() => {
-    document.title = `${t.portal_title} | ${artist?.name || t.artist_tba}`
-  }, [lang, artist, t.portal_title])
+    if (mounted) {
+      document.title = `${t.portal_title} | ${artist?.name || t.artist_tba}`
+    }
+  }, [lang, artist, mounted, t.portal_title])
 
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen theme-transition bg-[rgb(var(--background))] text-[rgb(var(--foreground))] selection:bg-indigo-500/30 relative overflow-x-hidden">
-      <div className="fixed inset-0 mesh-gradient z-0" />
-      <div className="fixed inset-0 noise-overlay z-10" />
+    <div className="min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))] selection:bg-primary/20 theme-transition font-sans">
+      <Toaster position="top-right" />
       
-      <div className="relative z-20 min-h-screen">
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="fixed top-0 left-0 right-0 z-[100] bg-rose-600 px-4 py-2 text-center text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg">
-            {t.offline_banner}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <nav className={`sticky top-0 z-50 border-b border-white/5 bg-white/5 backdrop-blur-xl dark:border-white/5 transition-all ${!isOnline ? 'pt-8 lg:pt-8' : ''}`}>
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
+      {/* Top Navigation */}
+      <nav className="sticky top-0 z-[60] border-b border-[rgb(var(--border))] bg-[rgb(var(--background))/80] backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-500/30 ring-2 ring-indigo-500/20 group">
-              <Vinyl size={22} className="group-hover:rotate-180 transition-transform duration-1000" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
+              <ShieldCheck size={18} />
             </div>
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-indigo-400">{t.production_hub}</p>
-              <h2 className="text-xl font-bold tracking-tight font-heading text-white">{t.portal_title}</h2>
+            <div className="hidden sm:block">
+              <span className="text-sm font-semibold tracking-tight">PS-promotion</span>
+              <span className="mx-2 text-[rgb(var(--muted-foreground))]">/</span>
+              <span className="text-sm font-medium text-[rgb(var(--muted-foreground))]">{t.portal_title}</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-             <button onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-all hover:bg-white/10">
-              <AnimatePresence mode="wait">
-                {resolvedTheme === 'dark' ? (
-                  <motion.div key="moon" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}><Moon size={18} /></motion.div>
-                ) : (
-                  <motion.div key="sun" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}><Sun size={18} /></motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-            <div className="h-10 w-px bg-white/10" />
-            <div className="flex items-center bg-white/5 rounded-xl p-1 gap-1 border border-white/10">
-              <button onClick={() => { setLang('en'); window.localStorage.setItem('artist-portal-lang', 'en'); }} className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${lang === 'en' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>EN</button>
-              <button onClick={() => { setLang('de'); window.localStorage.setItem('artist-portal-lang', 'de'); }} className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${lang === 'de' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>DE</button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-[rgb(var(--secondary))] rounded-md p-0.5 border border-[rgb(var(--border))]">
+              <button 
+                onClick={() => { setLang('en'); window.localStorage.setItem('artist-portal-lang', 'en'); }} 
+                className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${lang === 'en' ? 'bg-[rgb(var(--background))] text-[rgb(var(--foreground))] shadow-sm' : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'}`}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => { setLang('de'); window.localStorage.setItem('artist-portal-lang', 'de'); }} 
+                className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${lang === 'de' ? 'bg-[rgb(var(--background))] text-[rgb(var(--foreground))] shadow-sm' : 'text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))]'}`}
+              >
+                DE
+              </button>
             </div>
+            <button 
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} 
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--background))] text-[rgb(var(--muted-foreground))] hover:text-[rgb(var(--foreground))] hover:bg-[rgb(var(--secondary))] transition-colors"
+            >
+              {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-6 py-16 lg:px-10">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-        
-        <header className="mb-20">
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-            <div className="max-w-3xl">
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <p className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-400">
-                  <CheckCircle2 size={12} />
-                  {t.welcome_back} {artist?.name || t.artist_tba}{t.welcome_suffix}
-                </p>
-                {daysToNext !== null && (
-                  <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }} 
-                    animate={{ scale: 1, opacity: 1 }} 
-                    transition={{ delay: 0.4 }}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider ${daysToNext <= 7 ? 'bg-orange-600/20 text-orange-400' : 'bg-slate-800 text-slate-400'}`}
-                  >
-                    <Activity size={12} />
-                    <span>Next deadline in {daysToNext} days — {nextDeadlineMaterial?.item_name}</span>
-                  </motion.div>
-                )}
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-12 border-b border-[rgb(var(--border))] pb-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+                <Globe size={14} />
+                {t.production_hub}
               </div>
-              
-              <h1 className="text-6xl font-black tracking-tighter text-white lg:text-7xl font-heading leading-tight">
-                {artist?.name || (
-                   <span className="opacity-20 flex flex-col gap-4">
-                     <div className="h-16 w-3/4 skeleton-line rounded-xl" />
-                     <span className="text-xl font-medium tracking-normal text-slate-500 italic">Artist Assignment Pending</span>
-                   </span>
-                )}
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+                {artist?.name || t.artist_tba}
               </h1>
-              <p className="mt-8 max-w-xl text-xl font-medium leading-relaxed text-slate-400">
-                {t.gateway_desc} <span className="text-white border-b border-indigo-500/30 pb-0.5">{show?.venue_name || 'Your Venue'}</span>. 
+              <p className="max-w-2xl text-lg font-medium text-[rgb(var(--muted-foreground))]">
+                {t.gateway_desc} <span className="text-[rgb(var(--foreground))] underline decoration-primary/30 underline-offset-4">{show?.venue_name}</span>.
+                <br />
                 {t.deadline_inst}
               </p>
             </div>
             
-            <div className={`w-full lg:w-80 space-y-5 p-8 rounded-[2rem] theme-transition glass ${submittedCount === totalCount ? 'border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.15)]' : 'border-white/5'}`}>
-              <div className="flex items-center justify-between text-sm font-bold">
-                <span className={`${submittedCount === totalCount ? 'text-emerald-400' : 'text-slate-400'} uppercase tracking-[0.2em]`}>
-                  {submittedCount === totalCount ? t.stage_ready : 'Show Readiness'}
-                </span>
-                <span className={`${submittedCount === totalCount ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white'} px-3 py-1 rounded-lg text-xs tracking-widest transition-colors`}>{submittedCount} / {totalCount}</span>
+            <div className="w-full md:w-72 p-6 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[rgb(var(--muted-foreground))]">{t.progress}</span>
+                <span className="text-xs font-bold text-primary">{submittedCount} / {totalCount}</span>
               </div>
               <ProgressBar total={totalCount} submittedCount={submittedCount} lang={lang} />
-              <div className="flex justify-between gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                <span>{submittedCount === totalCount ? 'All Systems Go' : 'Pipeline'}</span>
-                {submittedCount < totalCount && <span>{Math.round((submittedCount/totalCount)*100)}% Sync</span>}
-              </div>
             </div>
-          </motion.div>
-        </header>
-
-        <div className="grid gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-8 space-y-12">
-            <section>
-              <div className="mb-10 flex items-center justify-between border-b border-white/5 pb-6">
-                <h3 className="text-2xl font-bold flex items-center gap-4 font-heading text-white">
-                  <FileText className="text-indigo-500" size={28} />
-                  The Checklist
-                </h3>
-              </div>
-              <div className="grid gap-6">
-                {materialsToRender.length === 0 ? (
-                   <div className="rounded-[2.5rem] border border-white/5 bg-white/5 p-20 text-center glass">
-                      <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-600/10 text-indigo-400 shadow-inner">
-                         <Loader2 size={32} className="animate-spin" />
-                      </div>
-                      <h4 className="text-2xl font-bold text-white">Configuring Workspace...</h4>
-                      <p className="mx-auto mt-4 max-w-sm text-slate-500 leading-relaxed font-medium">Your submission track will appear as soon as the production lead initializes the materials.</p>
-                   </div>
-                ) : (
-                  materialsToRender.map((m, idx) => (
-                    <motion.div key={m.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1, duration: 0.8 }}>
-                      <DocumentCard material={m} onUpload={handleUpload} isOnline={isOnline} lang={lang} />
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </section>
-          </div>
-
-          <div className="lg:col-span-4 space-y-10">
-            <section className="group sticky top-32 rounded-[2.5rem] border border-white/5 bg-white/5 p-10 shadow-2xl glass transition-all hover:border-white/10">
-              <h4 className="mb-10 text-[11px] font-black uppercase tracking-[0.3em] text-indigo-400 font-heading">Production Intelligence</h4>
-              
-              <div className="space-y-10">
-                <div className="flex gap-5 items-start">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-slate-500 group-hover:text-indigo-400 transition-colors shadow-inner">
-                    <MapPin size={22} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Primary Venue</span>
-                    {show?.venue_name ? (
-                       <p className="text-lg font-bold leading-tight text-white">{show.venue_name}, {show.city}</p>
-                    ) : (
-                       <div className="space-y-3">
-                         <div className="w-32 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium italic">Confirmed once contract is signed</p>
-                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-5 items-start">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-slate-500 group-hover:text-indigo-400 transition-colors shadow-inner">
-                    <Calendar size={22} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Show Readiness Date</span>
-                    {show?.show_date ? (
-                       <p className="text-lg font-bold text-white">{format(new Date(show.show_date), 'EEEE, MMM d yyyy')}</p>
-                    ) : (
-                       <div className="space-y-3">
-                         <div className="w-40 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium italic">Set after venue confirms date</p>
-                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-5 items-start">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-slate-500 group-hover:text-indigo-400 transition-colors shadow-inner">
-                    <Clock size={22} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Curtain Call</span>
-                    {show?.show_time ? (
-                       <p className="text-lg font-bold text-white">{show.show_time}</p>
-                    ) : (
-                       <div className="space-y-3">
-                         <div className="w-24 skeleton-line" />
-                         <p className="text-[11px] text-slate-600 font-medium italic">Final schedule pending</p>
-                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-12 border-t border-white/5 pt-10">
-                <h5 className="mb-6 text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Production Hub Support</h5>
-                <a href={`mailto:${show?.promoter_email}`} className="flex items-center justify-between group/email rounded-[1.5rem] border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 shadow-sm">
-                   <div className="flex items-center gap-4">
-                      <div className="h-11 w-11 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover/email:scale-110 transition-transform">
-                        <Mail size={18} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white leading-none">{show?.promoter_name || 'Production Lead'}</p>
-                        <p className="mt-1.5 text-xs text-slate-500 font-medium">{show?.promoter_email || 'support@ps-promotion.de'}</p>
-                      </div>
-                   </div>
-                   <ChevronRight size={16} className="text-slate-600 group-hover/email:translate-x-1 transition-transform" />
-                </a>
-              </div>
-            </section>
           </div>
         </div>
-        </motion.div>
+
+        {/* Content Grid */}
+        <div className="grid gap-8 lg:grid-cols-12 items-start">
+          {/* Main Checklist */}
+          <div className="lg:col-span-8">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-2 w-2 rounded-full bg-primary" />
+              <h2 className="text-xl font-bold">{t.required_assets}</h2>
+            </div>
+            
+            <div className="space-y-4">
+              {materialsToRender.length === 0 ? (
+                <div className="rounded-xl border border-[rgb(var(--border))] border-dashed p-12 text-center bg-[rgb(var(--secondary))/30]">
+                  <Loader2 className="mx-auto mb-4 animate-spin text-[rgb(var(--muted-foreground))]" size={32} />
+                  <p className="font-medium text-[rgb(var(--muted-foreground))]">{t.loading}</p>
+                </div>
+              ) : (
+                materialsToRender.map((m) => (
+                  <DocumentCard key={m.id} material={m} onUpload={handleUpload} isOnline={isOnline} lang={lang} />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar - Show Metadata */}
+          <div className="lg:col-span-4 space-y-6">
+             <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-8 shadow-sm">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[rgb(var(--muted-foreground))] mb-8">Show Details</h3>
+                
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="text-[rgb(var(--muted-foreground))] pt-1"><MapPin size={18} /></div>
+                    <div>
+                      <span className="block text-[10px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest mb-1">{t.venue}</span>
+                      <p className="font-semibold">{show?.venue_name}, {show?.city}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="text-[rgb(var(--muted-foreground))] pt-1"><Calendar size={18} /></div>
+                    <div>
+                      <span className="block text-[10px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest mb-1">{t.deadline}</span>
+                      <p className="font-semibold">{show?.show_date ? format(new Date(show.show_date), 'PPP', { locale: dateLocale }) : t.tba}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="text-[rgb(var(--muted-foreground))] pt-1"><Clock size={18} /></div>
+                    <div>
+                      <span className="block text-[10px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest mb-1">{t.curtain_call}</span>
+                      <p className="font-semibold">{show?.show_time || t.tba}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 pt-8 border-t border-[rgb(var(--border))]">
+                  <span className="block text-[10px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest mb-4">{t.support}</span>
+                  <a 
+                    href={`mailto:${show?.promoter_email}`} 
+                    className="flex items-center justify-between rounded-lg p-3 bg-[rgb(var(--secondary))] hover:bg-[rgb(var(--accent))] border border-[rgb(var(--border))] transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Mail size={16} className="text-primary" />
+                      <div>
+                        <p className="text-sm font-bold">{show?.promoter_name || t.production_lead}</p>
+                        <p className="text-xs text-[rgb(var(--muted-foreground))]">{show?.promoter_email}</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-[rgb(var(--muted-foreground))] group-hover:translate-x-0.5 transition-transform" />
+                  </a>
+                </div>
+             </div>
+
+             <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center gap-2">
+                <ShieldCheck size={14} className="text-primary" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{t.security}</span>
+             </div>
+          </div>
+        </div>
       </main>
 
-      <footer className="mt-32 border-t border-white/5 bg-black/40 py-16 backdrop-blur-xl">
-         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-              <div className="flex items-center gap-4">
-                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white text-xs font-black shadow-inner">PS</div>
-                 <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">© 2026 PS-PROMOTION PRODUCTION ECOSYSTEM</p>
-              </div>
-              <div className="flex gap-10 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] transition-all">
-                <a href="#" className="hover:text-indigo-400 transition-colors underline decoration-indigo-500/20 underline-offset-8">Privacy Protocol</a>
-                <a href="#" className="hover:text-indigo-400 transition-colors">Infrastructure Support</a>
-              </div>
-            </div>
-         </div>
+      <footer className="mt-20 border-t border-[rgb(var(--border))] py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-8">
+          <p className="text-xs font-medium text-[rgb(var(--muted-foreground))] uppercase tracking-widest">
+            © 2026 PS-PROMOTION
+          </p>
+          <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--muted-foreground))]">
+            <a href="#" className="hover:text-primary transition-colors">{t.privacy}</a>
+            <a href="#" className="hover:text-primary transition-colors underline underline-offset-4 decoration-primary/20">Infrastructure</a>
+          </div>
+        </div>
       </footer>
-      </div>
     </div>
   )
 }
