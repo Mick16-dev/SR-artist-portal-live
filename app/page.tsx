@@ -57,7 +57,7 @@ export default async function PortalPage({
 
     if (latestShow) {
       showId = normalizeKey(latestShow.id)
-      console.log('Public view triggered: showing latest show', showId)
+
     } else {
       // No shows in DB, show mock/welcome instead
       return <Welcome />
@@ -184,14 +184,7 @@ export default async function PortalPage({
       : Promise.resolve({ data: null, error: null })
   ])
 
-  // DEBUG RAW DATA:
-  console.log('DEBUG SHOW DATA:', { 
-    showId, 
-    token: cleanToken, 
-    showData: showById.data, 
-    error: (showById as any).error, 
-    showRecordState: !!showRecord 
-  })
+
 
   const show = showRecord || showById.data
   const showArtist = (show?.artists as any) || artist?.data

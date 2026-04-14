@@ -20,14 +20,14 @@ export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-red-500/20 antialiased overflow-hidden text-white">
       {/* Utility Header */}
       <nav className="border-b border-white/5 flex items-center h-20 px-8 lg:px-12 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Icons.Logo />
              </div>
-             <span className="text-2xl font-black tracking-tighter italic uppercase underline decoration-indigo-600/50 decoration-4 underline-offset-4">PS-promotion</span>
+             <span className="text-xl sm:text-2xl font-black tracking-tighter italic uppercase underline decoration-indigo-600/50 decoration-4 underline-offset-4 whitespace-nowrap">PS-promotion</span>
           </div>
-          <div className="text-[10px] font-black text-red-500 border border-red-500/20 px-5 py-2 rounded-full uppercase tracking-[0.3em] bg-red-500/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+          <div className="shrink-0 text-[10px] sm:text-xs font-black text-red-500 border border-red-500/20 px-4 sm:px-5 py-2 rounded-full uppercase tracking-[0.2em] sm:tracking-[0.3em] bg-red-500/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
              System Error &bull; E-404
           </div>
         </div>
@@ -71,7 +71,7 @@ export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
              transition={{ delay: 0.2 }}
              className="pt-10 flex flex-col items-center"
            >
-              <div className="p-10 bg-red-950/20 rounded-[3rem] border border-red-900/30 backdrop-blur-3xl text-left max-w-xl shadow-2xl relative overflow-hidden group">
+              <div className="p-10 bg-red-950/20 rounded-[3rem] border border-red-500/30 backdrop-blur-3xl text-left max-w-xl shadow-[0_0_50px_rgba(239,68,68,0.15)] hover:shadow-[0_0_70px_rgba(239,68,68,0.2)] transition-all duration-700 relative overflow-hidden group">
                  <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8">
                     <div className="w-16 h-16 bg-red-600 rounded-3xl flex items-center justify-center text-white shrink-0 group-hover:bg-red-500 transition-colors shadow-2xl shadow-red-900/50">
                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -86,13 +86,7 @@ export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
                  <div className="absolute inset-0 bg-gradient-to-br from-red-600/5 to-transparent pointer-events-none" />
               </div>
 
-              {receivedToken && receivedToken !== 'none' && (
-                 <div className="mt-8 p-5 bg-white/5 rounded-2xl border border-white/10 text-left">
-                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Received Token (for debugging)</p>
-                    <p className="font-mono text-sm text-amber-400 break-all">{receivedToken}</p>
-                   <p className="text-[10px] text-white/20 mt-2">Compare this to the <span className="text-white/40 font-bold">portal_token</span> column in your Supabase <span className="text-white/40 font-bold">materials</span> table.</p>
-                 </div>
-               )}
+
            </motion.div>
         </div>
 
