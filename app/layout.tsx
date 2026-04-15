@@ -6,8 +6,11 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
-  title: 'PS-promotion Artist Portal',
-  description: 'Submit your show documents securely through your personal PS-promotion portal.',
+  title: 'Artist Portal | Production Workspace',
+  description: 'Access show details, upload technical riders, and manage your production materials securely.',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({
