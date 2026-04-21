@@ -260,7 +260,11 @@ export default async function PortalPage({
         venue_name: show.venue_name || show.venue || show.venue_id || 'Venue TBA',
         city: show.city || 'TBA',
         show_date: show.show_date || show.date || '',
-        show_time: show.show_time || show.time || 'TBA',
+        show_time: show.show_time || show.time || 'TBD',
+        load_in_time: show.load_in_time || 'TBA',
+        soundcheck_time: show.soundcheck_time || 'TBA',
+        doors_time: show.doors_time || 'TBA',
+        catering_notes: show.catering_notes || '',
         promoter_name: show.promoter_name || 'Promoter Team',
         promoter_email: show.promoter_email || show.artist_email || '',
       }

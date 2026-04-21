@@ -53,7 +53,12 @@ export const translations = {
     welcome_back: 'Hey',
     welcome_suffix: ', welcome back!',
     stage_ready: 'Stage Ready',
-    ready_msg: "Everything's in. You're set for the show!"
+    ready_msg: "Everything's in. You're set for the show!",
+    load_in: 'Load In',
+    soundcheck: 'Soundcheck',
+    doors: 'Doors',
+    live_schedule: 'Live Schedule',
+    hospitality: 'Hospitality & Notes',
   },
   de: {
     portal_title: 'Künstlerportal',
@@ -107,6 +112,11 @@ export const translations = {
     welcome_back: 'Hey',
     welcome_suffix: ', schön dass du wieder da bist!',
     stage_ready: 'Bühne bereit',
-    ready_msg: 'Alles erledigt. Du bist bereit für die Show!'
+    ready_msg: 'Alles erledigt. Du bist bereit für die Show!',
+    load_in: 'Aufbau / Load In',
+    soundcheck: 'Soundcheck',
+    doors: 'Einlass',
+    live_schedule: 'Zeitplan',
+    hospitality: 'Catering & Hinweise',
   }
 }

@@ -22,7 +22,9 @@ import {
   Globe,
   Loader2,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Utensils,
+  Soup
 } from 'lucide-react'
 import { translations, Language } from '@/lib/translations'
 import { ProgressBar } from './ProgressBar'
@@ -44,6 +46,10 @@ interface Show {
   city: string
   show_date: string
   show_time: string
+  load_in_time?: string
+  soundcheck_time?: string
+  doors_time?: string
+  catering_notes?: string
   promoter_name: string
   promoter_email: string
 }
@@ -200,6 +206,56 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
             </div>
           </div>
         </div>
+
+        {/* Live Schedule & Logistics (NEW) */}
+        {(show.load_in_time || show.soundcheck_time || show.doors_time || show.catering_notes) && (
+          <div className="mb-12 grid gap-6 md:grid-cols-2">
+            {/* Schedule Card */}
+            <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-sm overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                <Clock size={80} />
+              </div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2">
+                <Clock size={14} />
+                {t.live_schedule}
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1 text-center py-4 bg-[rgb(var(--secondary))/30] rounded-xl border border-[rgb(var(--border))] group-hover:bg-[rgb(var(--secondary))/50] transition-colors">
+                  <span className="block text-[9px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest">{t.load_in}</span>
+                  <span className="block text-lg font-black italic">{show.load_in_time || '--:--'}</span>
+                </div>
+                <div className="space-y-1 text-center py-4 bg-primary/5 rounded-xl border border-primary/20 group-hover:bg-primary/10 transition-colors">
+                  <span className="block text-[9px] font-bold text-primary uppercase tracking-widest">{t.soundcheck}</span>
+                  <span className="block text-lg font-black italic">{show.soundcheck_time || '--:--'}</span>
+                </div>
+                <div className="space-y-1 text-center py-4 bg-[rgb(var(--secondary))/30] rounded-xl border border-[rgb(var(--border))] group-hover:bg-[rgb(var(--secondary))/50] transition-colors">
+                  <span className="block text-[9px] font-bold text-[rgb(var(--muted-foreground))] uppercase tracking-widest">{t.doors}</span>
+                  <span className="block text-lg font-black italic">{show.doors_time || '--:--'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Hospitality Card */}
+            <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-sm overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                <Soup size={80} />
+              </div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2">
+                <Utensils size={14} />
+                {t.hospitality}
+              </h3>
+              <div className="min-h-[80px] p-4 bg-[rgb(var(--secondary))/20] rounded-xl border border-[rgb(var(--border))] border-dashed group-hover:bg-[rgb(var(--secondary))/40] transition-colors relative z-10 transition-all">
+                {show.catering_notes ? (
+                  <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{show.catering_notes}</p>
+                ) : (
+                  <p className="text-xs italic text-[rgb(var(--muted-foreground))] uppercase tracking-widest font-bold opacity-30 h-10 flex items-center justify-center">
+                    TBA
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content Grid */}
         <div className="grid gap-8 lg:grid-cols-12 items-start">
