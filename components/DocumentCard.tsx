@@ -76,7 +76,7 @@ export function DocumentCard({ material, onUpload, isOnline, lang }: DocumentCar
         ? 'border-emerald-500/20 bg-emerald-500/5' 
         : isOverdue 
           ? 'border-red-500/30 bg-red-500/5' 
-          : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] hover:border-[rgb(var(--muted))]'}
+          : 'border-[rgb(var(--border))] bg-[rgb(var(--card))] hover:bg-primary/5 hover:border-primary/30'}
     `}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-start gap-4">
