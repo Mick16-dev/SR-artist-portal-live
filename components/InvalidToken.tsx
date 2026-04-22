@@ -14,7 +14,7 @@ export function InvalidToken({ receivedToken }: { receivedToken?: string }) {
            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive text-white">
               <ShieldX size={18} />
            </div>
-           <span className="text-sm font-bold tracking-tight uppercase">PS-promotion</span>
+           <span className="text-sm font-bold tracking-tight uppercase">ShowTime</span>
            <span className="text-[rgb(var(--muted-foreground))]">/</span>
            <span className="text-sm font-medium text-[rgb(var(--muted-foreground))]">Access Error</span>
         </div>
