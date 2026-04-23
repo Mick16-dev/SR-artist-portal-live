@@ -28,7 +28,7 @@ export function ExpiredToken({ expiresAt, promoterEmail }: { expiresAt: string, 
              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Icons.Logo />
              </div>
-             <span className="text-2xl font-black tracking-tighter italic uppercase">ShowTime</span>
+             <span className="text-2xl font-black tracking-tighter italic uppercase">ShowReady</span>
           </div>
           <div className="text-[10px] font-black text-amber-500 border border-amber-500/20 px-5 py-2 rounded-full uppercase tracking-[0.3em] bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
              Deadline Locked &bull; E-410
@@ -104,7 +104,7 @@ export function ExpiredToken({ expiresAt, promoterEmail }: { expiresAt: string, 
         </p>
         
         <div className="flex items-center gap-2 group transition-all">
-           <span className="text-sm font-black text-white/20 tracking-tighter italic uppercase group-hover:text-amber-500">ShowTime</span>
+           <span className="text-sm font-black text-white/20 tracking-tighter italic uppercase group-hover:text-amber-500">ShowReady</span>
         </div>
       </footer>
     </div>

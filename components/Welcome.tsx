@@ -25,7 +25,7 @@ export function Welcome() {
              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Icons.Logo />
              </div>
-             <span className="text-2xl font-black tracking-tighter italic">ShowTime</span>
+             <span className="text-2xl font-black tracking-tighter italic">ShowReady</span>
           </div>
           <div className="text-[10px] font-black text-white/40 border border-white/10 px-5 py-2 rounded-full uppercase tracking-[0.3em]">
              Production Environment
@@ -119,7 +119,7 @@ export function Welcome() {
          <div className="mt-20 pt-10 border-t border-white/5 flex flex-col items-center">
             <div className="flex items-center gap-2 opacity-20 hover:opacity-50 transition-opacity mb-4">
                <Icons.Logo />
-               <span className="text-sm font-black tracking-tighter italic">ShowTime</span>
+               <span className="text-sm font-black tracking-tighter italic">ShowReady</span>
             </div>
             <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.5em]">
                AUTHORISED PRODUCTION HUB &copy; MMXXVI

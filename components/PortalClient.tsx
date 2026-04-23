@@ -147,7 +147,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
               <ShieldCheck size={18} />
             </div>
             <div className="hidden sm:block">
-              <span className="text-sm font-semibold tracking-tight">ShowTime</span>
+              <span className="text-sm font-semibold tracking-tight">ShowReady</span>
               <span className="mx-2 text-[rgb(var(--muted-foreground))]">/</span>
               <span className="text-sm font-medium text-[rgb(var(--muted-foreground))]">{t.portal_title}</span>
             </div>
@@ -340,7 +340,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       <footer className="mt-20 border-t border-[rgb(var(--border))] py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-8">
           <p className="text-xs font-medium text-[rgb(var(--muted-foreground))] uppercase tracking-widest">
-            © 2026 SHOWTIME
+            © 2026 SHOWREADY
           </p>
           <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--muted-foreground))]">
             <a href="#" className="hover:text-primary transition-colors">{t.privacy}</a>

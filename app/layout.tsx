@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
-  title: 'Artist Portal | Production Workspace',
+  title: 'ShowReady Artist Portal | Production Workspace',
   description: 'Access show details, upload technical riders, and manage your production materials securely.',
   icons: {
     icon: '/icon.svg',

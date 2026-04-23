@@ -65,12 +65,12 @@ export default async function PortalPage({
   } else if (preview === 'true') {
     // Preview Mode for immediate verification of the "Backbone" UI
      const mockShow = { 
-       venue_name: "ShowTime Arena", 
+       venue_name: "ShowReady Arena", 
        city: "London", 
        show_date: "2026-06-15", 
        show_time: "20:00", 
-       promoter_name: "ShowTime Global", 
-       promoter_email: "production@showtime.app" 
+       promoter_name: "ShowReady Global", 
+       promoter_email: "production@showready.app" 
      }
      const mockArtist = { name: "Sample Artist" }
      const mockMaterials = [
