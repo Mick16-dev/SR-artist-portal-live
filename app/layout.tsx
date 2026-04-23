@@ -9,7 +9,12 @@ export const metadata: Metadata = {
   title: 'ShowReady Artist Portal | Production Workspace',
   description: 'Access show details, upload technical riders, and manage your production materials securely.',
   icons: {
-    icon: '/icon.svg',
+    icon: [
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+    ],
   },
 }
 
