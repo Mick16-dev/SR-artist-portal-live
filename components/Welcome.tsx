@@ -34,8 +34,8 @@ export function Welcome() {
       </nav>
 
       {/* Kinetic Core */}
-      <main className="flex-1 flex flex-col items-center justify-center relative px-6 py-24 text-center">
-        <div className="max-w-4xl mx-auto space-y-16">
+      <main className="flex-1 flex flex-col items-center justify-center relative px-6 py-16 text-center">
+        <div className="max-w-4xl mx-auto space-y-12">
            
            <motion.div
              initial={{ opacity: 0, scale: 0.9 }}
@@ -45,11 +45,11 @@ export function Welcome() {
               <Icons.Connect />
            </motion.div>
 
-           <div className="space-y-6">
+           <div className="space-y-4">
               <motion.h1 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-7xl lg:text-[10rem] font-black leading-[0.85] tracking-tighter uppercase italic"
+                className="text-5xl lg:text-8xl font-black leading-[0.9] tracking-tighter uppercase italic"
               >
                  Your Portal. <br />
                  <span className="text-white/10">Simplified.</span>
@@ -59,7 +59,7 @@ export function Welcome() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-xl lg:text-3xl text-white/40 font-bold max-w-3xl mx-auto leading-tight tracking-tight italic"
+                className="text-lg lg:text-xl text-white/40 font-bold max-w-2xl mx-auto leading-snug tracking-tight italic"
               >
                  The high-end gateway for artists to securely manage critical production documents and technical requirements.
               </motion.p>
@@ -69,9 +69,9 @@ export function Welcome() {
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="pt-10 flex flex-col items-center"
+             className="pt-6 flex flex-col items-center"
            >
-              <div className="p-10 bg-white/5 rounded-[3rem] border border-white/10 backdrop-blur-3xl text-left max-w-xl shadow-2xl relative overflow-hidden group">
+              <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-3xl text-left max-w-lg shadow-2xl relative overflow-hidden group">
                  <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8">
                     <div className="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center text-white shrink-0 group-hover:bg-indigo-600 transition-colors">
                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
