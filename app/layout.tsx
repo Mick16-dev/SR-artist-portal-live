@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export const metadata: Metadata = {
   title: 'ShowReady Artist Portal | Production Workspace',
@@ -17,6 +18,8 @@ export const metadata: Metadata = {
     ],
   },
 }
+
+
 
 export default function RootLayout({
   children,
@@ -32,7 +35,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
           <Toaster position="top-center" richColors closeButton />
         </ThemeProvider>
       </body>
