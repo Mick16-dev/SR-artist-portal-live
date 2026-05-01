@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { PortalClient } from '@/components/PortalClient'
 import { InvalidToken } from '@/components/InvalidToken'
 import { Welcome } from '@/components/Welcome'
+import { ExpiredToken } from '@/components/ExpiredToken'
 
 // Server-side Supabase client for SSR
 // Uses SERVICE ROLE key (bypasses RLS) - safe because this runs server-side only
@@ -251,6 +252,25 @@ export default async function PortalPage({
         <InvalidToken receivedToken={cleanToken || 'none'} />
       </div>
     )
+  }
+
+  // 5. SECURITY GUARD: Expiry Check (30-day Grace Period)
+  // If the show date is more than 30 days in the past, lock the portal.
+  const showDateVal = show?.show_date || show?.date
+  if (showDateVal && preview !== 'true') {
+    const showDate = new Date(showDateVal)
+    const now = new Date()
+    const diffTime = now.getTime() - showDate.getTime()
+    const diffDays = diffTime / (1000 * 60 * 60 * 24)
+    
+    if (diffDays > 30) {
+      return (
+        <ExpiredToken 
+          expiresAt={new Date(showDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()} 
+          promoterEmail={show?.promoter_email || 'production@showready.app'} 
+        />
+      )
+    }
   }
 
   // Graceful Fallbacks for missing relational data
