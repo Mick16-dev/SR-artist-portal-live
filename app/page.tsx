@@ -50,7 +50,7 @@ export default async function PortalPage({
     // PUBLIC FALLBACK: If no token provided, try to fetch the most recent show as a "public" preview
     const { data: latestShow } = await supabase!
       .from('shows')
-      .select('*')
+      .select('id')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -85,7 +85,7 @@ export default async function PortalPage({
     if (showHintId) {
       const { data: hintedShow } = await supabase!
         .from('shows')
-        .select('*')
+        .select('id, venue_name, venue, venue_id, city, show_date, date, show_time, time, load_in_time, soundcheck_time, doors_time, catering_notes, promoter_name, promoter_email, artist_email, artist_name, artist_id')
         .eq('id', showHintId)
         .maybeSingle()
 
@@ -101,7 +101,7 @@ export default async function PortalPage({
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken || '')
       const { data: showMatch } = await supabase!
         .from('shows')
-        .select('*')
+        .select('id, venue_name, venue, venue_id, city, show_date, date, show_time, time, load_in_time, soundcheck_time, doors_time, catering_notes, promoter_name, promoter_email, artist_email, artist_name, artist_id')
         .or(`portal_token.eq.${cleanToken},show_id.eq.${cleanToken}${isUuid ? `,id.eq.${cleanToken}` : ''}`)
         .maybeSingle()
 
@@ -136,7 +136,7 @@ export default async function PortalPage({
           const onlyShowId = distinctShowIds[0]
           const { data: singleShow } = await supabase!
             .from('shows')
-            .select('*')
+            .select('id, venue_name, venue, venue_id, city, show_date, date, show_time, time, load_in_time, soundcheck_time, doors_time, catering_notes, promoter_name, promoter_email, artist_email, artist_name, artist_id')
             .eq('id', onlyShowId)
             .maybeSingle()
 
@@ -174,7 +174,7 @@ export default async function PortalPage({
       ? Promise.resolve({ data: showRecord, error: null })
       : isResolvedShowIdUuid
         ? supabase!.from('shows')
-            .select('*, artists(*)') // Try to join artists if possible
+            .select('id, venue_name, venue, venue_id, city, show_date, date, show_time, time, load_in_time, soundcheck_time, doors_time, catering_notes, promoter_name, promoter_email, artist_email, artist_name, artist_id, artists(id, name, email)')
             .or(`id.eq.${showId},show_id.eq.${showId}`)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
@@ -197,7 +197,7 @@ export default async function PortalPage({
   if (materialShowKeys.length) {
     const { data: materialsData } = await supabase!
       .from('materials')
-      .select('*')
+      .select('id, item_name, description, status, deadline, submitted_at, file_url, portal_token, show_id')
       .in('show_id', materialShowKeys)
       .order('deadline', { ascending: true })
 
@@ -208,7 +208,7 @@ export default async function PortalPage({
   if (cleanToken) {
     const { data: materialsByToken } = await supabase!
       .from('materials')
-      .select('*')
+      .select('id, item_name, description, status, deadline, submitted_at, file_url, portal_token, show_id')
       .eq('portal_token', cleanToken)
       .order('deadline', { ascending: true })
 
@@ -231,7 +231,7 @@ export default async function PortalPage({
   if (showId) {
     const { data: fullShowMaterials } = await supabase!
       .from('materials')
-      .select('*')
+      .select('id, item_name, description, status, deadline, submitted_at, file_url, portal_token, show_id')
       .eq('show_id', showId)
       .order('deadline', { ascending: true })
 

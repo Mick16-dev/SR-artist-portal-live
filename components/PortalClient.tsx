@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import confetti from 'canvas-confetti'
 import { differenceInDays, format, addDays } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -76,11 +77,22 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
   const dateLocale = lang === 'de' ? de : enUS
 
   const isPreview = token === 'preview-mode'
+
+  const { data: swrMaterials, mutate } = useSWR<Material[]>(
+    !isPreview && mounted ? `/api/portal/materials?showId=${showId}` : null,
+    async (url: string) => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('Failed to fetch materials')
+      return res.json()
+    },
+    { fallbackData: initialMaterials, revalidateOnFocus: true }
+  )
+
   const materialsToRender = isPreview ? [
     { id: '1', item_name: 'Primary Technical Rider', description: 'Secure audio, monitor, and lighting patch.', status: 'pending', deadline: format(addDays(new Date(), 4), 'yyyy-MM-dd'), portal_token: 'p1' },
     { id: '2', item_name: 'Press Photos', description: 'High-res promotional imagery for marketing.', status: 'pending', deadline: format(addDays(new Date(), 9), 'yyyy-MM-dd'), portal_token: 'p2' },
     { id: '3', item_name: 'Electronic Press Kit (EPK)', description: 'Catering and green room requirements.', status: 'pending', deadline: format(addDays(new Date(), 19), 'yyyy-MM-dd'), portal_token: 'p3' },
-  ] as Material[] : initialMaterials
+  ] as Material[] : (swrMaterials || initialMaterials)
 
   useEffect(() => {
     setMounted(true)
@@ -103,12 +115,12 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
     const channel = supabase.channel('production-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'materials', filter: `show_id=eq.${showId}` }, () => {
-        window.location.reload() 
+        mutate() 
       }).subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [showId, isPreview, mounted])
 
-  const submittedCount = materialsToRender.filter(m => m.status === 'submitted').length
+  const submittedCount = materialsToRender.filter((m: Material) => m.status === 'submitted').length
   const totalCount = materialsToRender.length
   const isComplete = submittedCount === totalCount && totalCount > 0
 
@@ -123,6 +135,7 @@ export function PortalClient({ show, artist, materials: initialMaterials, token,
       fd.append('token', materialToken); fd.append('item_name', name); fd.append('file', file)
       const res = await fetch(process.env.NEXT_PUBLIC_N8N_MATERIAL_UPLOAD_WEBHOOK!, { method: 'POST', body: fd })
       if (!res.ok) throw new Error()
+      mutate() // Instant revalidate after upload
       toast.success(`${name} ${t.upload_success}.`); return true
     } catch { toast.error(t.trans_failed); return false; }
   }
